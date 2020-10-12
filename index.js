@@ -22,6 +22,7 @@ var transporter = nodemailer.createTransport({
 var errorMailOptions = {
     from: 'sassybox-dev@outlook.com',
     to: 'bluescript17@gmail.com',
+    replyTo: 'contact@sassyboxshop.com',
     subject: 'Error with Processing Order #',
     text: ''
 };
