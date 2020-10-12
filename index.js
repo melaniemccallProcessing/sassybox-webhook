@@ -20,7 +20,7 @@ var transporter = nodemailer.createTransport({
   });
   
 var errorMailOptions = {
-    from: 'bluescript17@gmail.com',
+    from: 'sassybox-dev@outlook.com',
     to: 'bluescript17@gmail.com',
     subject: 'Error with Processing Order #',
     text: ''
@@ -76,7 +76,7 @@ function sendErrEmail(mailOptions){
 }
 function sendErrEmailToCustomer(rejectedItems, order) {
     var options = {
-        from: 'bluescript17@gmail.com',
+        from: 'sassybox-dev@outlook.com',
         to: 'bluescript17@gmail.com',
         replyTo: 'contact@sassyboxshop.com',
         subject: 'Items cancelled from your order',
