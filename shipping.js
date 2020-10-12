@@ -1,5 +1,8 @@
 exports.getShippingId = function(shippingTitle) {
-    if(shippingTitle.includes('Free Shipping') || shippingTitle.includes('Priority Mail')) {
+    if(shippingTitle.includes('Free Shipping') || shippingTitle.includes('Flat Rate')) {
+        return 6;
+    }
+    if(shippingTitle.includes('Priority Mail')) {
         return 101;
     }
     if(shippingTitle.includes('First Class')) {

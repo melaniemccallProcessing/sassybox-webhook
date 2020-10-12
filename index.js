@@ -20,8 +20,11 @@ var transporter = nodemailer.createTransport({
   });
   
 var errorMailOptions = {
-    from: 'sassybox-dev@outlook.com',
-    to: 'bluescript17@gmail.com',
+    from: {
+        name: 'SassyBox Shop',
+        address: 'sassybox-dev@outlook.com'
+    },
+    to: 'bluescript17@gmail.com, contact@sassyboxshop.com',
     replyTo: 'contact@sassyboxshop.com',
     subject: 'Error with Processing Order #',
     text: ''
@@ -163,7 +166,7 @@ async function placeOrderToECN(order) {
                 <genericshippingmethodid>${orderShippingId}</genericshippingmethodid>
                 <invoiceheaderbase64></invoiceheaderbase64>
                 <fillstatusid>4</fillstatusid>
-                <packingincludesid></packingincludesid>
+                <packingincludesid>1</packingincludesid>
                 <orderpauselevelid></orderpauselevelid>			
                 <invoicefootertext></invoicefootertext>
                 <signatureconfirmationid>0</signatureconfirmationid>
