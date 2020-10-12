@@ -12,9 +12,9 @@ var nodemailer = require('nodemailer');
 var shipping = require('./shipping.js');
 
 var transporter = nodemailer.createTransport({
-    service: 'gmail',
+    service: 'outlook',
     auth: {
-      user: 'bluescript17@gmail.com',
+      user: 'sassybox-dev@outlook.com',
       pass: 'Mary_jewel23'
     }
   });
