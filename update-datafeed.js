@@ -129,25 +129,25 @@ async function updateProductsAvailability(itemsToUpdate) {
                   let productinShopify = result.data.data.product;
 
                   if(productinShopify.tags.includes(itemsWithProductIds[i].stock)) {
-                      // console.log(`no changes here for ${itemsWithProductIds[i].title}, product status is the same, updating categories though`);
-                      let tags = productinShopify.tags;
-                      tags = tags.concat(itemsWithProductIds[i].categories);  
+                      console.log(`no changes here for ${itemsWithProductIds[i].title}, product status is the same, updating categories though`);
+                      // let tags = productinShopify.tags;
+                      // tags = tags.concat(itemsWithProductIds[i].categories);  
 
-                      let product_id_withoutprefix = itemsWithProductIds[i].product_id.replace("gid://shopify/Product/", "")
-                      let productUpdate = {
-                          "product": {
-                            "id": product_id_withoutprefix,
-                            "tags": tags
-                          }
-                        }
-                        makeProductUpdate(productUpdate).then(response => {
-                          // console.log(response);
-                          console.log(`product updated with new categories successfully-->${response.data.product.title}`);
-                          // console.log(response.data);
-                        }).catch(err=> {
-                            // console.log(err);
-                            console.log('ERROR UPDATING NEW CATEGORIES for product-->'+ productinShopify.title + ' ' + err)
-                        });  
+                      // let product_id_withoutprefix = itemsWithProductIds[i].product_id.replace("gid://shopify/Product/", "")
+                      // let productUpdate = {
+                      //     "product": {
+                      //       "id": product_id_withoutprefix,
+                      //       "tags": tags
+                      //     }
+                      //   }
+                      //   makeProductUpdate(productUpdate).then(response => {
+                      //     // console.log(response);
+                      //     console.log(`product updated with new categories successfully-->${response.data.product.title}`);
+                      //     // console.log(response.data);
+                      //   }).catch(err=> {
+                      //       // console.log(err);
+                      //       console.log('ERROR UPDATING NEW CATEGORIES for product-->'+ productinShopify.title + ' ' + err)
+                      //   });  
                   } else { //stock statuses are not the same
                       // console.log(`Retrieved status from ECN for ${itemsWithProductIds[i].title} : ${itemsWithProductIds[i].stock} --> Shopifys status ${productinShopify.publishedAt},Shopifys tags ${productinShopify.tags}`)
                       if(productinShopify.publishedAt !== null) { //if product is published
