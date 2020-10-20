@@ -20,14 +20,15 @@ async function updateShopifyWithECNDataFeed(){
         // fs.readFile(__dirname + '/test-small-batch.xml', function(err, data) {
             parser.parseString(response.data, function (err, result) {
               initUpdate(result);
-            // });
-        });
+            });
+        // });
     })
     .catch(response => {
-
+      console.log('Error grabbing the latest' + response);
     })
    
 }
+
 async function initUpdate(result) {
   let modifyItems = result.content.modify[0].item ? result.content.modify[0].item : [];
   let addItems = result.content.add[0].item ? result.content.add[0].item : [];
@@ -40,7 +41,6 @@ async function initUpdate(result) {
   }
   //
   modifyItems = modifyItems.concat(addItems);
-  console.log(modifyItems.length);  
   // console.log(modifyItems.findIndex(item => item.alternatetitle == 'Prowler Red Military Cap 61cm - Black/Gray'));
   let itemsToUpdate = await parseXML(modifyItems, 'update');
   let itemsToDelete;
@@ -51,12 +51,30 @@ async function initUpdate(result) {
   }
 
   let allItemsToParse = itemsToUpdate.concat(itemsToDelete);
-  // console.log('waiting for items to parse...');
-  // setTimeout(()=> {
-       await updateProductsAvailability(allItemsToParse);
-       timeCommit();
-  // }, 5000)
+  console.log('Total items to parse' + allItemsToParse.length);  
 
+  let chunkedArraysToParse = chunk(allItemsToParse,200);
+  console.log('Total chunks: '+ chunkedArraysToParse.length);
+  // console.log('waiting for items to parse...');
+  
+  for(let i = 0; i < chunkedArraysToParse.length; i++) {
+    console.log('Chunk#'+ (i+1) + '------->' + 'of' + chunkedArraysToParse.length);
+    await updateProductsAvailability(chunkedArraysToParse[i]);
+  }
+  timeCommit();
+
+}
+function chunk(array, size) {
+  const chunked_arr = [];
+  for (let i = 0; i < array.length; i++) {
+    const last = chunked_arr[chunked_arr.length - 1];
+    if (!last || last.length === size) {
+      chunked_arr.push([array[i]]);
+    } else {
+      last.push(array[i]);
+    }
+  }
+  return chunked_arr;
 }  
 function timeCommit(){
   axios({
@@ -66,7 +84,7 @@ function timeCommit(){
     console.log("time commit successful");
   }).catch(err => {
     console.log("Error updating time commit")
-  })
+  });
 }  
 function parseXML(itemsToLoop, action) {
     let arrToReturn = [];
@@ -129,7 +147,7 @@ async function updateProductsAvailability(itemsToUpdate) {
                   let productinShopify = result.data.data.product;
 
                   if(productinShopify.tags.includes(itemsWithProductIds[i].stock)) {
-                      console.log(`no changes here for ${itemsWithProductIds[i].title}, product status is the same, updating categories though`);
+                      console.log(`no changes here for ${itemsWithProductIds[i].title}, product status is the same`);
                       // let tags = productinShopify.tags;
                       // tags = tags.concat(itemsWithProductIds[i].categories);  
 
