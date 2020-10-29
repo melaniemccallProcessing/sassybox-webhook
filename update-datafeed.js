@@ -89,7 +89,7 @@ function timeCommit() {
   }).then(() => {
     console.log("time commit successful");
   }).catch(err => {
-    console.log("Error updating time commit")
+    console.log("Error updating time commit"+ err)
   });
 }
 
@@ -227,14 +227,14 @@ async function updateProductsAvailability(itemsToUpdate) {
         })
 
       } else { //Create product that doesn't exist
-        if (!itemsWithProductIds[i].categories.includes('Displays') && !itemsWithProductIds[i].categories.includes('Fishbowl') && !itemsWithProductIds[i].title.includes('CBD')) {
+        if (!itemsWithProductIds[i].categories.includes('Displays') && !itemsWithProductIds[i].categories.includes('Fishbowl') && !itemsWithProductIds[i].title.includes('CBD') && !isBadVendor(itemsWithProductIds[i].vendor) && !itemsWithProductIds[i].title.includes('bowl') && !itemsWithProductIds[i].title.includes('Bowl') && !itemsWithProductIds[i].title.includes('Display')) {
           await createProduct(itemsWithProductIds[i]).then(response => {
             console.log(`Product created successfully--> ${response.data.product.title}`)
           }).catch(err => {
-            console.log(`ERROR creating product ${err.data}`);
+            console.log(`ERROR creating product ${err}`);
           })
         } else {
-          console.log('Not creating item because its a display, bowl, or CBD product-->' + itemsWithProductIds[i].title)
+          console.log('Not creating item because its a display, bowl, CBD product, OR it is an unwanted vendor-->' + itemsWithProductIds[i].title)
         }
       }
     } else { //"Delete" products by unpublishing them
@@ -327,7 +327,10 @@ async function getProductInfo(product_id) {
     }
   });
 }
-
+function isBadVendor(vendor) {
+  let mapArray = ["Shane's World","HottProducts",'Screaming O','Golden Triangle','Adventure Industries LLC','Bellesa Enterprises LLC','Betru Wellness','Channel 1 Releasing','Cyrex Ltd.','East Coast New NJ','Even Technology Co Limited','Flawless Five Health','Global Protection Corp','Hemp Bomb','Issawrap Inc/p.s. Condoms','Lix Tongue Vibes','Nori Fields llc','Ohmibod','Old Man China Brush','Phe','Random House','Rapture Novelties','Rejuviel','Rock Candy Toys','Sign of Life','Solvey','Streem Master','Stud 100', 'Tickle Kitty Press', 'Tongue Joy'];
+  return mapArray.includes(vendor);
+}
 async function createProduct(item) {
   let productImages = [];
   if (item.image1) {
@@ -372,7 +375,8 @@ async function createProduct(item) {
       url: 'https://febe69a891c04a2e134443805cdcd304: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@try-sassy-box.myshopify.com/admin/api/2020-10/products.json',
       method: 'post',
       data: newProductObj
-    }) //tag with- grammarCheck
+    }); 
+    //tag with- grammarCheck
   } else {
     console.log("no item description for-- " + item.title + " not making this");
   }
