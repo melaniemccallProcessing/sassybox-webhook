@@ -328,7 +328,7 @@ async function getProductInfo(product_id) {
   });
 }
 function isBadVendor(vendor) {
-  let mapArray = ["Shane's World","HottProducts",'Screaming O','Golden Triangle','Adventure Industries LLC','Bellesa Enterprises LLC','Betru Wellness','Channel 1 Releasing','Cyrex Ltd.','East Coast New NJ','Even Technology Co Limited','Flawless Five Health','Global Protection Corp','Hemp Bomb','Issawrap Inc/p.s. Condoms','Lix Tongue Vibes','Nori Fields llc','Ohmibod','Old Man China Brush','Phe','Random House','Rapture Novelties','Rejuviel','Rock Candy Toys','Sign of Life','Solvey','Streem Master','Stud 100', 'Tickle Kitty Press', 'Tongue Joy'];
+  let mapArray = ["Shane's World","Hott Products",'Screaming O','Golden Triangle','Adventure Industries, Llc','Bellesa Enterprises Inc','Betru Wellness','Channel 1 Releasing','Cyrex Ltd','East Coast New Nj','Even Technology Co Limited','Flawless 5 Health','Global Protection Corp','Hemp Bomb','Issawrap Inc/p.s. Condoms','Lix Tongue Vibes','Nori Fields Llc','Ohmibod','Old Man China Brush','Phe','Random House, Inc','Rapture Novelties','Rejuviel','Rock Candy Toys','Signs of Life Inc.','Solevy Co','Streem Master','Stud 100', 'Ticklekitty Press', 'Tongue Joy'];
   return mapArray.includes(vendor);
 }
 async function createProduct(item) {
