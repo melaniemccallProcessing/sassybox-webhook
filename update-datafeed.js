@@ -227,7 +227,7 @@ async function updateProductsAvailability(itemsToUpdate) {
         })
 
       } else { //Create product that doesn't exist
-        if (!itemsWithProductIds[i].categories.includes('Displays') && !itemsWithProductIds[i].categories.includes('Fishbowl') && !itemsWithProductIds[i].title.includes('CBD') && !isBadVendor(itemsWithProductIds[i].vendor) && !itemsWithProductIds[i].title.includes('bowl') && !itemsWithProductIds[i].title.includes('Bowl') && !itemsWithProductIds[i].title.includes('Display')) {
+        if (!itemsWithProductIds[i].categories.includes('Displays') && !itemsWithProductIds[i].categories.includes('Fishbowl') && !itemsWithProductIds[i].title.includes('CBD') && !isBadVendor(itemsWithProductIds[i].vendor) && !itemsWithProductIds[i].title.includes('bowl') && !itemsWithProductIds[i].title.includes('Bowl') && !itemsWithProductIds[i].title.includes('Display') && !itemsWithProductIds[i].title.includes('Case')) {
           await createProduct(itemsWithProductIds[i]).then(response => {
             console.log(`Product created successfully--> ${response.data.product.title}`)
           }).catch(err => {
@@ -344,13 +344,15 @@ async function createProduct(item) {
     })
   }
   if (item.description) {
+    let product_tags = item.categories.concat(item.stock);
+    product_tags.push('New');
     let newProductObj = {
       "product": {
         "title": item.alternateTitle == ' ' ? item.title : item.alternateTitle,
         "body_html": item.description,
         "vendor": item.vendor,
         "product_type": item.id,
-        "tags": item.categories.concat(item.stock),
+        "tags": product_tags,
         "variants": [{
           "title": "Default Title",
           "price": item.price * 2.5,
