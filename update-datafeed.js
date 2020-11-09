@@ -1,20 +1,45 @@
 const axios = require('axios');
 var xmlParser = require('xml2js');
 var fs = require('fs');
+var nodemailer = require('nodemailer');
+
 const {
   triggerAsyncId
 } = require('async_hooks');
 const {
   create
 } = require('domain');
+const { delete } = require('request-promise');
 // import { GraphQLClient, gql } from 'graphql-request'
 
+var transporter = nodemailer.createTransport({
+  service: 'outlook',
+  auth: {
+    user: 'sassybox-dev@outlook.com',
+    pass: 'Mary_jewel23'
+  }
+});
+
+let todaysDate = new Date(Date.now());
+var mailOptions = {
+  from: {
+      name: 'SassyBox Shop',
+      address: 'sassybox-dev@outlook.com'
+  },
+  to: 'sassybox-dev@outlook.com',
+  replyTo: 'contact@sassyboxshop.com',
+  subject: 'DataFeed Update ' + todaysDate.toLocaleString(),
+  text: ''
+};
 
 updateShopifyWithECNDataFeed();
 
 
 async function updateShopifyWithECNDataFeed() {
   let grabDataFeedUrl = 'http://feed.adultdropshipper.com/ecnFeed.cfm?act=read&siteID=508&passKey=2A62698BC5DC612F3A8E1AEC93C718BD'
+  let updatedItems = '';
+  let newItems = '';
+  let deletedItems = '';
 
   axios.get(grabDataFeedUrl)
     .then(response => {
@@ -66,6 +91,7 @@ async function initUpdate(result) {
     await updateProductsAvailability(chunkedArraysToParse[i]);
   }
   timeCommit();
+  sendEmail(updatedItems,newItems,deletedItems);
 
 }
 
@@ -194,6 +220,7 @@ async function updateProductsAvailability(itemsToUpdate) {
               makeProductUpdate(productUpdate).then(response => {
                 // console.log(response);
                 console.log(`product updated successfully-->${response.data.product.title}`);
+                updatedItems += response.data.product.title + '<br>';
                 // console.log(response.data);
               }).catch(err => {
                 // console.log(err);
@@ -216,6 +243,7 @@ async function updateProductsAvailability(itemsToUpdate) {
               makeProductUpdate(productUpdate).then(response => {
                 console.log(`product updated successfully-->${response.data.product.title}`);
                 // console.log(response.data);
+                updatedItems += response.data.product.title + '<br>';
               }).catch(err => {
                 console.log('ERROR UPDATING PRODUCT-->' + productinShopify.title + ' ' + err);
               });
@@ -229,7 +257,8 @@ async function updateProductsAvailability(itemsToUpdate) {
       } else { //Create product that doesn't exist
         if (!itemsWithProductIds[i].categories.includes('Displays') && !itemsWithProductIds[i].categories.includes('Fishbowl') && !itemsWithProductIds[i].title.includes('CBD') && !isBadVendor(itemsWithProductIds[i].vendor) && !itemsWithProductIds[i].title.includes('bowl') && !itemsWithProductIds[i].title.includes('Bowl') && !itemsWithProductIds[i].title.includes('Display') && !itemsWithProductIds[i].title.includes('Case')) {
           await createProduct(itemsWithProductIds[i]).then(response => {
-            console.log(`Product created successfully--> ${response.data.product.title}`)
+            console.log(`Product created successfully--> ${response.data.product.title}`);
+            newItems += response.data.product.title + '<br>';
           }).catch(err => {
             console.log(`ERROR creating product ${err}`);
           })
@@ -249,6 +278,7 @@ async function updateProductsAvailability(itemsToUpdate) {
         }
         await makeProductUpdateASYNC(productUpdate).then(response => {
           console.log(`product "deleted" successfully${response.data.product.title}`);
+          deletedItems += response.data.product.title + '<br>';
         }).catch(err => {
           console.log('ERROR deleting product' + err.data);
           //send err email for error deleting product
@@ -382,4 +412,20 @@ async function createProduct(item) {
   } else {
     console.log("no item description for-- " + item.title + " not making this");
   }
+}
+
+function sendEmail(updatedItems,newItems,deletedItems) {
+  let strToSend = '<b>Datafeed Report:</b><br><br>';
+  strToSend += '<b>New Items:</b><br>' + newItems + '<br>';
+  strToSend += '<b>Updated Items:</b><br>' + updatedItems + '<br>';
+  strToSend += '<b>Deleted Items:</b><br>' + deletedItems + '<br>';
+  mailOptions.text = strToSend;
+  transporter.sendMail(mailOptions, function(err, info){
+    if (err) {
+      console.log('error sending update email' + err);
+    } else {
+      console.log('Update email sent: ' + info.response);
+    }
+  });
+  
 }
