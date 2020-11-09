@@ -9,7 +9,6 @@ const {
 const {
   create
 } = require('domain');
-const { delete } = require('request-promise');
 // import { GraphQLClient, gql } from 'graphql-request'
 
 var transporter = nodemailer.createTransport({
@@ -31,15 +30,16 @@ var mailOptions = {
   subject: 'DataFeed Update ' + todaysDate.toLocaleString(),
   text: ''
 };
+let updatedItems = '';
+let newItems = '';
+let deletedItems = '';
 
 updateShopifyWithECNDataFeed();
 
 
 async function updateShopifyWithECNDataFeed() {
   let grabDataFeedUrl = 'http://feed.adultdropshipper.com/ecnFeed.cfm?act=read&siteID=508&passKey=2A62698BC5DC612F3A8E1AEC93C718BD'
-  let updatedItems = '';
-  let newItems = '';
-  let deletedItems = '';
+
 
   axios.get(grabDataFeedUrl)
     .then(response => {
