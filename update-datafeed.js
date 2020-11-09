@@ -416,7 +416,7 @@ async function createProduct(item) {
 }
 
 function sendEmail(updatedItems,newItems,deletedItems) {
-  let strToSend = '<b>Datafeed Report:</b><br><br>';
+  let strToSend = '<b>Datafeed Report: </b>' + todaysDate+ '<br><br>';
   strToSend += '<b>New Items:</b><br>' + newItems + '<br>';
   strToSend += '<b>Updated Items:</b><br>' + updatedItems + '<br>';
   strToSend += '<b>Deleted Items:</b><br>' + deletedItems + '<br>';
