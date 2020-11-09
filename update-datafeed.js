@@ -15,7 +15,7 @@ var transporter = nodemailer.createTransport({
   service: 'outlook',
   auth: {
     user: 'sassybox-dev@outlook.com',
-    pass: 'Mary_jewel23'
+    pass: 'ReadyToLaunch2020'
   }
 });
 
@@ -28,7 +28,7 @@ var mailOptions = {
   to: 'sassybox-dev@outlook.com',
   replyTo: 'contact@sassyboxshop.com',
   subject: 'DataFeed Update ' + todaysDate.toLocaleString(),
-  text: ''
+  html: ''
 };
 let updatedItems = '';
 let newItems = '';
@@ -419,7 +419,7 @@ function sendEmail(updatedItems,newItems,deletedItems) {
   strToSend += '<b>New Items:</b><br>' + newItems + '<br>';
   strToSend += '<b>Updated Items:</b><br>' + updatedItems + '<br>';
   strToSend += '<b>Deleted Items:</b><br>' + deletedItems + '<br>';
-  mailOptions.text = strToSend;
+  mailOptions.html = strToSend;
   transporter.sendMail(mailOptions, function(err, info){
     if (err) {
       console.log('error sending update email' + err);
