@@ -54,6 +54,7 @@ async function updateShopifyWithECNDataFeed() {
     })
     .catch(response => {
       console.log('Error grabbing the latest' + response);
+      sendErrEmail(response);
     })
 
 }
@@ -423,6 +424,17 @@ function sendEmail(updatedItems,newItems,deletedItems) {
   transporter.sendMail(mailOptions, function(err, info){
     if (err) {
       console.log('error sending update email' + err);
+    } else {
+      console.log('Update email sent: ' + info.response);
+    }
+  });
+  
+}
+function sendErrEmail(error) {
+  mailOptions.html = 'Error Getting Datafeed <br>' + error;
+  transporter.sendMail(mailOptions, function(err, info){
+    if (err) {
+      console.log('error sending error email' + err);
     } else {
       console.log('Update email sent: ' + info.response);
     }
