@@ -417,9 +417,15 @@ async function createProduct(item) {
 
 function sendEmail(updatedItems,newItems,deletedItems) {
   let strToSend = '<b>Datafeed Updates: </b><br><br>';
-  strToSend += '<b>New Items:</b><br>' + newItems + '<br>';
-  strToSend += '<b>Updated Items:</b><br>' + updatedItems + '<br>';
-  strToSend += '<b>Deleted Items:</b><br>' + deletedItems + '<br>';
+  if (newItems) {
+    strToSend += '<b>New Items:</b><br>' + newItems + '<br>';
+  }
+  if(updatedItems) {
+    strToSend += '<b>Updated Items:</b><br>' + updatedItems + '<br>';
+  }
+  if(deletedItems) {
+    strToSend += '<b>Deleted Items:</b><br>' + deletedItems + '<br>';
+  }
   mailOptions.html = strToSend;
   transporter.sendMail(mailOptions, function(err, info){
     if (err) {
