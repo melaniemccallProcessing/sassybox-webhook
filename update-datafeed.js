@@ -209,6 +209,7 @@ async function updateProductsAvailability(itemsToUpdate) {
               let tags = productinShopify.tags.filter(tag => tag !== 'Available Now');
               tags.push(itemsWithProductIds[i].stock);
               tags = tags.concat(itemsWithProductIds[i].categories);
+              tags = filterUnwantedProductsFromCategories(tags, itemsWithProductIds[i].sku);
 
               let product_id_withoutprefix = itemsWithProductIds[i].product_id.replace("gid://shopify/Product/", "")
               let productUpdate = {
@@ -454,4 +455,53 @@ function sendErrEmail(error) {
     }
   });
   
+}
+function filterUnwantedProductsFromCategories(tags, sku) {
+  let categoriesToReturn = tags;
+  if (categoriesToReturn.includes('Bondage & Fetish') && isBadBondageAndFetish(sku)){
+    console.log('Removing tag--Bondage & Fetish from product: ' + sku)
+    categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Bondage & Fetish');
+  }
+  if (categoriesToReturn.includes('Masturbators & Strokers') && isBadMasturbator(sku)){
+    console.log('Removing tag--Masturbators & Strokers from product: ' + sku)
+    categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Masturbators & Strokers');
+  }
+  if ((categoriesToReturn.includes('Anal Beads') || categoriesToReturn.includes('Anal Masturbator') || categoriesToReturn.includes('Anal Plug') || categoriesToReturn.includes('Anal Stimulation'))  && isBadAnalToy(sku)){
+    console.log('Removing tag-- Anal Toys from product: ' + sku)
+    categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Anal Beads' && cat !== 'Anal Masturbator' && cat !== 'Anal Plug' && cat !== 'Anal Stimulation');
+  }
+  if (categoriesToReturn.includes('Cockrings') && isBadCockring(sku)){
+    console.log('Removing tag--Cockrings from product: ' + sku)
+    categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Cockrings');
+  }
+  if (categoriesToReturn.includes('Lingerie') && isBadLingerie(sku)){
+    console.log('Removing tag--Lingerie from product: ' + sku)
+    categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Lingerie');
+  }
+  return categoriesToReturn;
+}
+
+function isBadBondageAndFetish(sku) {
+  let unwantedProducts = exclusion_list.unwantedBondageProducts;
+  return unwantedProducts.includes(sku);
+}
+
+function isBadMasturbator(sku) {
+  let unwantedProducts = exclusion_list.unwantedMasturbatorProducts;
+  return unwantedProducts.includes(sku);
+}
+
+function isBadAnalToy(sku) {
+  let unwantedProducts = exclusion_list.unwantedAnalToyProducts;
+  return unwantedProducts.includes(sku);
+}
+
+function isBadCockring(sku) {
+  let unwantedProducts = exclusion_list.unwantedCockringProducts;
+  return unwantedProducts.includes(sku);
+}
+
+function isBadLingerie(sku) {
+  let unwantedProducts = exclusion_list.unwantedLingerieProducts;
+  return unwantedProducts.includes(sku);
 }
