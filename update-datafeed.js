@@ -2,6 +2,7 @@ const axios = require('axios');
 var xmlParser = require('xml2js');
 var fs = require('fs');
 var nodemailer = require('nodemailer');
+var exclusion_list = require('./products-to-exclude');
 
 const {
   triggerAsyncId
@@ -256,7 +257,7 @@ async function updateProductsAvailability(itemsToUpdate) {
         })
 
       } else { //Create product that doesn't exist
-        if (!itemsWithProductIds[i].categories.includes('Displays') && !itemsWithProductIds[i].categories.includes('Fishbowl') && !itemsWithProductIds[i].title.includes('CBD') && !isBadVendor(itemsWithProductIds[i].vendor) && !itemsWithProductIds[i].title.includes('bowl') && !itemsWithProductIds[i].title.includes('Bowl') && !itemsWithProductIds[i].title.includes('Display') && !itemsWithProductIds[i].title.includes('Case')) {
+        if (!itemsWithProductIds[i].categories.includes('Displays') && !itemsWithProductIds[i].categories.includes('Fishbowl') && !itemsWithProductIds[i].title.includes('CBD') && !isBadVendor(itemsWithProductIds[i].vendor) && !isBadProduct(itemsWithProductIds[i].sku) && !itemsWithProductIds[i].title.includes('bowl') && !itemsWithProductIds[i].title.includes('Bowl') && !itemsWithProductIds[i].title.includes('Display') && !itemsWithProductIds[i].title.includes('Case')) {
           await createProduct(itemsWithProductIds[i]).then(response => {
             console.log(`Product created successfully--> ${response.data.product.title}`);
             newItems += response.data.product.title + '<br>';
@@ -358,10 +359,17 @@ async function getProductInfo(product_id) {
     }
   });
 }
+
 function isBadVendor(vendor) {
   let mapArray = ["Shane's World","Hott Products",'Screaming O','Golden Triangle','Adventure Industries, Llc','Bellesa Enterprises Inc','Betru Wellness','Channel 1 Releasing','Cyrex Ltd','East Coast New Nj','Even Technology Co Limited','Flawless 5 Health','Global Protection Corp','Hemp Bomb','Issawrap Inc/p.s. Condoms','Lix Tongue Vibes','Nori Fields Llc','Ohmibod','Old Man China Brush','Phe','Random House, Inc','Rapture Novelties','Rejuviel','Rock Candy Toys','Signs of Life Inc.','Solevy Co','Streem Master','Stud 100', 'Ticklekitty Press', 'Tongue Joy', 'Zero Tolerance', 'Gnarly Ride Inc', 'Little Genie', 'Little Genie Productions Llc.', 'Bijoux Indiscrets', 'Wallace - O Farrell,inc.', 'Icon Brands Inc', 'Abs Holdings', 'Agb Dba Spartacus Enterprises', 'Ball & Chain', 'Ball and Chain', 'Body Action', 'Creative Conceptionsl Llc', 'Dona', 'Emotion Lotion', 'Hustler', 'Id Lubes', 'Joydivision Llc', 'Kingman Industries, Inc', 'Ky','Me','New Concepts - Deeva','Ozze Creations', 'Private Label Productions Llc', 'TP3 LLC', 'Thredly.com', 'Wet Lubes', 'Cousins Group Inc', 'Paradise Marketing Services Pm', 'Carrashield Labs dba Devine 9', 'Novelties By Nass-walk Inc','Tantus, Inc','Topco Sales','Lovehoney, Llc','Adam & Eve','Adam and Eve','Bedroom Products Llc','Evolved Novelties','Fredericks Of Hollywood','Savvy Co Llc','Baci Lingerie','Barely Bare','Leg Avenue Inc.','Prowler','Secrets'];
   return mapArray.includes(vendor);
 }
+
+function isBadProduct(product_sku) {
+  let unwantedProducts = exclusion_list.productsToExclude;
+  return unwantedProducts.includes(product_sku);
+}
+
 async function createProduct(item) {
   let productImages = [];
   if (item.image1) {
