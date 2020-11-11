@@ -413,6 +413,7 @@ async function createProduct(item) {
         "published": item.stock == 'Available Now' ? true : false
       }
     }
+    console.log("Product Object " + newProductObj);
     return axios({
       url: 'https://febe69a891c04a2e134443805cdcd304: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@try-sassy-box.myshopify.com/admin/api/2020-10/products.json',
       method: 'post',
