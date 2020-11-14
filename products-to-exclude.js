@@ -479,4 +479,9 @@ let unwantedLingerieProducts = [
     'SE-9705-10-3',
     'SE-0060-03-3'
 ]
-module.exports = {productsToExclude,unwantedBondageProducts,unwantedMasturbatorProducts,unwantedAnalToyProducts,unwantedCockringProducts,unwantedLingerieProducts};
+
+let unwantedBathAndBodyProducts = [
+    'XR-AE859',
+    'PD4682-23'
+]
+module.exports = {productsToExclude,unwantedBondageProducts,unwantedMasturbatorProducts,unwantedAnalToyProducts,unwantedCockringProducts,unwantedLingerieProducts, unwantedBathAndBodyProducts};

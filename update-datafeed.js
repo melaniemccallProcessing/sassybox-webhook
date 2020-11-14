@@ -258,7 +258,7 @@ async function updateProductsAvailability(itemsToUpdate) {
         })
 
       } else { //Create product that doesn't exist
-        if (!itemsWithProductIds[i].categories.includes('Displays') && !itemsWithProductIds[i].categories.includes('Condom Bowls') && !itemsWithProductIds[i].categories.includes('Tester') && !itemsWithProductIds[i].categories.includes('Fishbowl') && !itemsWithProductIds[i].title.includes('CBD') && !isBadVendor(itemsWithProductIds[i].vendor) && !isBadProduct(itemsWithProductIds[i].sku) && !itemsWithProductIds[i].title.includes('bowl') && !itemsWithProductIds[i].title.includes('Bowl') && !itemsWithProductIds[i].title.includes('Display') && !itemsWithProductIds[i].title.includes('Case')) {
+        if (!itemsWithProductIds[i].categories.includes('Displays') && !itemsWithProductIds[i].categories.includes('Condom Bowls') && !itemsWithProductIds[i].categories.includes('Tester') && !itemsWithProductIds[i].categories.includes('Fishbowl') && !itemsWithProductIds[i].title.includes('CBD') && !itemsWithProductIds[i].title.includes('Hemp') && !isBadVendor(itemsWithProductIds[i].vendor) && !isBadProduct(itemsWithProductIds[i].sku) && !itemsWithProductIds[i].title.includes('bowl') && !itemsWithProductIds[i].title.includes('Bowl') && !itemsWithProductIds[i].title.includes('Display') && !itemsWithProductIds[i].title.includes('Case')) {
           await createProduct(itemsWithProductIds[i]).then(response => {
             console.log(`Product created successfully--> ${response.data.product.title}`);
             newItems += response.data.product.title + '<br>';
@@ -479,11 +479,19 @@ function filterUnwantedProductsFromCategories(tags, sku) {
     console.log('Removing tag--Lingerie from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Lingerie');
   }
+  if (categoriesToReturn.includes('Bath & Body') && isBadBathAndBody(sku)){
+    console.log('Removing tag--Bath & Body from product: ' + sku)
+    categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Bath & Body');
+  }
   return categoriesToReturn;
 }
 
 function isBadBondageAndFetish(sku) {
   let unwantedProducts = exclusion_list.unwantedBondageProducts;
+  return unwantedProducts.includes(sku);
+}
+function isBadBathAndBody(sku) {
+  let unwantedProducts = exclusion_list.unwantedBathAndBodyProducts;
   return unwantedProducts.includes(sku);
 }
 
