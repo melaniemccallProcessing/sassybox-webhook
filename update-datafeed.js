@@ -519,11 +519,35 @@ function filterUnwantedProductsFromCategories(tags, sku) {
     console.log('Removing tag--Water Based from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Water Based');
   }
+  if (categoriesToReturn.includes('Massage Oils') && isBadMassageOil(sku)){
+    console.log('Removing tag--Massage Oils from product: ' + sku)
+    categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Massage Oils');
+  }
+  
   if (categoriesToReturn.includes('Lubricants') && isBadLubricant(sku)){
     console.log('Removing tag--Lubricants from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Lubricants');
   }
-  
+  if (categoriesToReturn.includes('Dildos & Dongs') && isBadDildo(sku)){
+    console.log('Removing tag--Dildos & Dongs from product: ' + sku)
+    categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Dildos & Dongs');
+  }
+  if (categoriesToReturn.includes('Bendable') && isBadBendable(sku)){
+    console.log('Removing tag--Bendable from product: ' + sku)
+    categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Bendable');
+  }
+  if (categoriesToReturn.includes('Mouth Masturbator') && isBadMouthMasturbator(sku)){
+    console.log('Removing tag--Mouth Masturbator from product: ' + sku)
+    categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Mouth Masturbator');
+  }
+  if (categoriesToReturn.includes('Double Dongs') && isBadDoubleDildo(sku)){
+    console.log('Removing tag--Double Dongs from product: ' + sku)
+    categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Double Dongs');
+  }
+  if (categoriesToReturn.includes('Anal Plug') && isBadAnalPlug(sku)){
+    console.log('Removing tag--Anal Plug from product: ' + sku)
+    categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Anal Plug');
+  }
   return categoriesToReturn;
 }
 
@@ -594,5 +618,29 @@ function isBadWaterBased(sku) {
 }
 function isBadLubricant(sku) {
   let unwantedProducts = exclusion_list.unwantedLubricants;
+  return unwantedProducts.includes(sku);
+}
+function isBadMassageOil(sku) {
+  let unwantedProducts = exclusion_list.unwantedMassageOil;
+  return unwantedProducts.includes(sku);
+}
+function isBadDildo(sku) {
+  let unwantedProducts = exclusion_list.unwantedDildos;
+  return unwantedProducts.includes(sku);
+}
+function isBadBendable(sku) {
+  let unwantedProducts = exclusion_list.unwantedBendable;
+  return unwantedProducts.includes(sku);
+}
+function isBadMouthMasturbator(sku) {
+  let unwantedProducts = exclusion_list.unwantedMouthMasturbator;
+  return unwantedProducts.includes(sku);
+}
+function isBadDoubleDildo(sku) {
+  let unwantedProducts = exclusion_list.unwantedDoubleDildo;
+  return unwantedProducts.includes(sku);
+}
+function isBadAnalPlug(sku) {
+  let unwantedProducts = exclusion_list.unwantedAnalPlug;
   return unwantedProducts.includes(sku);
 }

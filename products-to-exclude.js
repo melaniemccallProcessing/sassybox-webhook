@@ -328,7 +328,8 @@ let unwantedMasturbatorProducts = [
     'XGZO6013',
     'SE-0961-05-3',
     'SE-0961-10-3',
-    'XPDRD42099'
+    'XPDRD42099',
+    'XR-AC846'
 ];
 
 let unwantedAnalToyProducts = [
@@ -415,7 +416,9 @@ let unwantedCockringProducts = [
     'PD3805-00',
     'PD3801-26',
     'PD3801-15',
-    'SE-2712-07-3'
+    'SE-2712-07-3',
+    'XPDRD519',
+    'XPDRD518'
 ]
 
 let unwantedLingerieProducts = [
@@ -572,6 +575,45 @@ let unwantedLubricants = [
     'DJ-0683-51-3',
     'DJ-0683-50-3'    
 ]
+let unwantedMassageOil = [
+    'DJ-1070-50-3',
+    'PD4777-23',
+    'DJ-1051-15-3',
+    'DJ-1051-05-3',
+    'DJ-0683-52-3',
+    'DJ-0683-51-3',
+    'DJ-0683-50-3'    
+]
+let unwantedDildos = [
+    'XR-AG207',
+    'XR-AE796',
+    'PD3763-19',
+    'XR-AC846',
+    'TRC001-SET',
+    'XR-AE970',
+    'XR-AE751',
+    'RWDB068',
+    'PD3731-23',
+    'NS1122-17',
+    'NS1122-13',
+    'XR-AE137'
+]
+
+let unwantedBendable = [
+    'XR-AG207'
+]
+let unwantedMouthMasturbator = [
+    'XR-AG207'
+]
+let unwantedDoubleDildo = [
+    'PD3763-19',
+    'PD3731-23'
+]
+let unwantedAnalPlug = [
+    'XPDRD519',
+    'XPDRD518',
+    'DJ-2402-10-3'
+]
 module.exports = {productsToExclude,
     unwantedBondageProducts,
     unwantedMasturbatorProducts,
@@ -588,4 +630,10 @@ module.exports = {productsToExclude,
     unwantedKitProducts,
     unwantedGelsAndCreams,
     unwantedWaterBased,
-    unwantedLubricants};
+    unwantedLubricants,
+    unwantedMassageOil,
+    unwantedDildos,
+    unwantedBendable,
+    unwantedMouthMasturbator,
+    unwantedDoubleDildo,
+    unwantedAnalPlug};
