@@ -234,6 +234,8 @@ async function updateProductsAvailability(itemsToUpdate) {
               let tags = productinShopify.tags.filter(tag => tag !== 'Short Wait' && tag !== 'Call your Rep for Availability' && tag !== 'Not Available');
               tags.push('Available Now');
               tags = tags.concat(itemsWithProductIds[i].categories);
+              tags = filterUnwantedProductsFromCategories(tags, itemsWithProductIds[i].sku);
+
               let product_id_withoutprefix = itemsWithProductIds[i].product_id.replace("gid://shopify/Product/", "")
               let productUpdate = {
                 "product": {
