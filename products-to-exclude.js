@@ -515,4 +515,77 @@ let unwantedVibratorProducts = [
     'PD3367-32',
     'PD1679-00'
 ]
-module.exports = {productsToExclude,unwantedBondageProducts,unwantedMasturbatorProducts,unwantedAnalToyProducts,unwantedCockringProducts,unwantedLingerieProducts, unwantedBathAndBodyProducts, unwantedVibratorProducts};
+
+let unwantedRealisticDildo = [
+    'XR-AF584',
+    'PD3763-19',
+    'XR-AC846',
+    'XR-AE751',
+    'PD3731-23'
+]
+
+let unwantedSiliconeDildo = [
+   'XR-AF584',
+   'TRC004-SET',
+   'TRC001-SET'
+]
+let unwantedCoupleKits = [
+    'PD3766-00'
+]
+let unwantedRemoteControlProducts = [
+    'DJ-1159-02-3',
+    'DJ-1156-02-3',
+    'DJ-1156-01-3',
+    'PD3763-19',
+    'PD3731-23'
+]
+let unwantedLotionProducts = [
+    'PD3763-19',
+    'PD2114-23',
+    'PD3763-19'
+]
+let unwantedKitProducts = [
+    'PD3763-19',
+    'PD4777-23',
+    'XR-AE796'
+]
+let unwantedGelsAndCreams = [
+    'DJ-1070-50-3',
+    'DJ-1051-15-3',
+    'PD4777-23',
+    'DJ-1051-05-3',
+    'DJ-0683-52-3',
+    'DJ-0683-51-3',
+    'DJ-0683-50-3'
+]
+let unwantedWaterBased = [
+    'DJ-1070-50-3',
+    'DJ-1051-15-3',
+    'DJ-1051-05-3'
+]
+let unwantedLubricants = [
+    'DJ-1070-50-3',
+    'PD4777-23',
+    'DJ-1051-15-3',
+    'DJ-1051-05-3',
+    'DJ-0683-52-3',
+    'DJ-0683-51-3',
+    'DJ-0683-50-3'    
+]
+module.exports = {productsToExclude,
+    unwantedBondageProducts,
+    unwantedMasturbatorProducts,
+    unwantedAnalToyProducts,
+    unwantedCockringProducts,
+    unwantedLingerieProducts, 
+    unwantedBathAndBodyProducts, 
+    unwantedVibratorProducts, 
+    unwantedRealisticDildo, 
+    unwantedSiliconeDildo,
+    unwantedCoupleKits,
+    unwantedRemoteControlProducts,
+    unwantedLotionProducts,
+    unwantedKitProducts,
+    unwantedGelsAndCreams,
+    unwantedWaterBased,
+    unwantedLubricants};

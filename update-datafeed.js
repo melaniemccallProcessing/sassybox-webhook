@@ -487,6 +487,42 @@ function filterUnwantedProductsFromCategories(tags, sku) {
     console.log('Removing tag--Vibrators from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Vibrators');
   }
+  if (categoriesToReturn.includes('Realistic Dongs') && isBadRealDildo(sku)){
+    console.log('Removing tag--Realistic Dongs from product: ' + sku)
+    categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Realistic Dongs');
+  }
+  if ((categoriesToReturn.includes('Silicone') && categoriesToReturn.includes('Dildos & Dongs')) && isBadSiliconeDildo(sku)){
+    console.log('Removing tag--Silicone Dildo from product: ' + sku)
+    categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Silicone');
+  }
+  if ((categoriesToReturn.includes('Kit') && categoriesToReturn.includes('Couples')) && isBadCouplesKit(sku)){
+    console.log('Removing tag--Couples Kit from product: ' + sku)
+    categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Couples');
+  }
+  if (categoriesToReturn.includes('Remote Control') && isBadRemoteControl(sku)){
+    console.log('Removing tag--Remote Control from product: ' + sku)
+    categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Remote Control');
+  }
+  if (categoriesToReturn.includes('Lotion') && isBadLotion(sku)){
+    console.log('Removing tag--Lotion from product: ' + sku)
+    categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Lotion');
+  }
+  if (categoriesToReturn.includes('Kit') && isBadKit(sku)){
+    console.log('Removing tag--Kit from product: ' + sku)
+    categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Kit');
+  }
+  if (categoriesToReturn.includes('Gels & Creams') && isBadGel(sku)){
+    console.log('Removing tag--Gels & Creams from product: ' + sku)
+    categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Gels & Creams');
+  }
+  if (categoriesToReturn.includes('Water Based') && isBadWaterBased(sku)){
+    console.log('Removing tag--Water Based from product: ' + sku)
+    categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Water Based');
+  }
+  if (categoriesToReturn.includes('Lubricants') && isBadLubricant(sku)){
+    console.log('Removing tag--Lubricants from product: ' + sku)
+    categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Lubricants');
+  }
   
   return categoriesToReturn;
 }
@@ -522,5 +558,41 @@ function isBadLingerie(sku) {
 
 function isBadVibrator(sku) {
   let unwantedProducts = exclusion_list.unwantedVibratorProducts;
+  return unwantedProducts.includes(sku);
+}
+function isBadRealDildo(sku) {
+  let unwantedProducts = exclusion_list.unwantedRealisticDildo;
+  return unwantedProducts.includes(sku);
+}
+function isBadSiliconeDildo(sku) {
+  let unwantedProducts = exclusion_list.unwantedSiliconeDildo;
+  return unwantedProducts.includes(sku);
+}
+function isBadCouplesKit(sku) {
+  let unwantedProducts = exclusion_list.unwantedCoupleKits;
+  return unwantedProducts.includes(sku);
+}
+function isBadRemoteControl(sku) {
+  let unwantedProducts = exclusion_list.unwantedRemoteControlProducts;
+  return unwantedProducts.includes(sku);
+}
+function isBadLotion(sku) {
+  let unwantedProducts = exclusion_list.unwantedLotionProducts;
+  return unwantedProducts.includes(sku);
+}
+function isBadKit(sku) {
+  let unwantedProducts = exclusion_list.unwantedKitProducts;
+  return unwantedProducts.includes(sku);
+}
+function isBadGel(sku) {
+  let unwantedProducts = exclusion_list.unwantedGelsAndCreams;
+  return unwantedProducts.includes(sku);
+}
+function isBadWaterBased(sku) {
+  let unwantedProducts = exclusion_list.unwantedWaterBased;
+  return unwantedProducts.includes(sku);
+}
+function isBadLubricant(sku) {
+  let unwantedProducts = exclusion_list.unwantedLubricants;
   return unwantedProducts.includes(sku);
 }
