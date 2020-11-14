@@ -484,4 +484,35 @@ let unwantedBathAndBodyProducts = [
     'XR-AE859',
     'PD4682-23'
 ]
-module.exports = {productsToExclude,unwantedBondageProducts,unwantedMasturbatorProducts,unwantedAnalToyProducts,unwantedCockringProducts,unwantedLingerieProducts, unwantedBathAndBodyProducts};
+
+let unwantedVibratorProducts = [
+    'XR-AF584',
+    'XR-AE796',
+    'XR-AB865',
+    'PD3766-00',
+    'DJ-1160-05-3',
+    'DJ-1159-02-3',
+    'DJ-1156-02-3',
+    'DJ-1156-01-3',
+    'SE-0130-02-2',
+    'SE-0235-35-2',
+    'SE-0235-30-2',
+    'SE-0157-01-3',
+    'PD3883-24',
+    'SE-0131-87-2',
+    'SE-0131-85-2',
+    'SE-0235-20-2',
+    'PD5402-21',
+    'SE-0131-83-2',
+    'SE-0131-80-2',
+    'PD5401-29',
+    'PD5401-21',
+    'PD2114-23',
+    'PD3852-00',
+    'PD3367-21',
+    'PD3367-23',
+    'PD3367-12',
+    'PD3367-32',
+    'PD1679-00'
+]
+module.exports = {productsToExclude,unwantedBondageProducts,unwantedMasturbatorProducts,unwantedAnalToyProducts,unwantedCockringProducts,unwantedLingerieProducts, unwantedBathAndBodyProducts, unwantedVibratorProducts};
