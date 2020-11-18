@@ -137,7 +137,6 @@ function parseXML(itemsToLoop, action) {
       item.barcode = itemsToLoop[i]['upc'][0];
       item.image1 = 'https://s3.amazonaws.com/ecn-watermarks/effex/' + itemsToLoop[i]['itemID'][0] + '_2.jpg';
       item.image2 = 'https://s3.amazonaws.com/ecn-watermarks/effex/' + itemsToLoop[i]['itemID'][0] + '_1.jpg';
-      item.weight = itemsToLoop[i]['itemweight'][0];
       let mastercategories = itemsToLoop[i].categoriesV2[0].categoritem[0].mastercategories[0].split("|");
       let subcategories = itemsToLoop[i].categoriesV2[0].categoritem[0].subcategories[0].split("|");
       let combined_categories = mastercategories.concat(subcategories);
@@ -404,8 +403,8 @@ async function createProduct(item) {
           "inventory_management": "shopify",
           "taxable": true,
           "barcode": item.barcode,
-          "grams": item.weight * 453.592,
-          "weight": Number(item.weight),
+          "grams": 0,
+          "weight": 0,
           "weight_unit": "lb",
           "inventory_quantity": 0,
           "requires_shipping": true,
