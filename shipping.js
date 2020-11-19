@@ -1,33 +1,17 @@
 exports.getShippingId = function(shippingTitle) {
-    if(shippingTitle.includes('Free Shipping') || shippingTitle.includes('Flat Rate')) {
+    if(shippingTitle.includes('Free Shipping') || shippingTitle.includes('USPS- Domestic Standard')) {
         return 6;
     }
-    if(shippingTitle.includes('Priority Mail')) {
-        return 101;
+    if(shippingTitle.includes('Priority Express')) {
+        return 102;
     }
-    if(shippingTitle.includes('First Class')) {
-        return 100;
-    }
-    if(shippingTitle.includes('UPS 2nd Day Air')) {
-        return 112;
-    }
-    if(shippingTitle.includes('UPS Next Day Air Saver')) {
-        return 110;
-    }
-    if(shippingTitle.includes('UPS Next Day Air')) {
+    if(shippingTitle.includes('Overnight')) {
         return 109;
+    }
+    if(shippingTitle.includes('2-3 days')) {
+        return 113;
     }
     if(shippingTitle.includes('DHL')) {
         return 138;
     }
-    if(shippingTitle.includes('UPS Worldwide Expedited')) {
-        return 118;
-    }
-    if(shippingTitle.includes('UPS Worldwide Express Plus')) {
-        return 117;
-    }
-    if(shippingTitle.includes('UPS Worldwide Express')) {
-        return 116;
-    }
-    
 }
