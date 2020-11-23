@@ -184,7 +184,7 @@ async function updateProductsAvailability(itemsToUpdate) {
 
           if (productinShopify.tags.includes(itemsWithProductIds[i].stock)) {
             console.log(`no changes here for ${itemsWithProductIds[i].title}, product status is the same`);
-            let tags = productinShopify.tags.filter(tag => tag !== 'Available Now' && tag !== 'Short Wait' && tag !== 'Call your Rep for Availability' && tag !== 'Not Available' && tag !== 'Long Wait' && tag !== 'Closeout/discontinued');
+            let tags = productinShopify.tags.filter(tag => tag !== 'Available Now' && tag !== 'Short Wait' && tag !== 'Call your Rep for Availability' && tag !== 'Not Available' && tag !== 'Long Wait');
             tags.push(itemsWithProductIds[i].stock);
             let publishedStatus = itemsWithProductIds[i].stock == 'Available Now' ? true : false;
             let product_id_withoutprefix = itemsWithProductIds[i].product_id.replace("gid://shopify/Product/", "")
@@ -206,7 +206,7 @@ async function updateProductsAvailability(itemsToUpdate) {
           } else { //stock statuses are not the same
             // console.log(`Retrieved status from ECN for ${itemsWithProductIds[i].title} : ${itemsWithProductIds[i].stock} --> Shopifys status ${productinShopify.publishedAt},Shopifys tags ${productinShopify.tags}`)
             if (productinShopify.publishedAt !== null) { //if product is published
-              let tags = productinShopify.tags.filter(tag => tag !== 'Available Now' && tag !== 'Short Wait' && tag !== 'Call your Rep for Availability' && tag !== 'Not Available' && tag !== 'Long Wait' && tag !== 'Closeout/discontinued');
+              let tags = productinShopify.tags.filter(tag => tag !== 'Available Now' && tag !== 'Short Wait' && tag !== 'Call your Rep for Availability' && tag !== 'Not Available' && tag !== 'Long Wait');
               tags.push(itemsWithProductIds[i].stock);
               tags = tags.concat(itemsWithProductIds[i].categories);
               tags = filterUnwantedProductsFromCategories(tags, itemsWithProductIds[i].sku);
@@ -231,7 +231,7 @@ async function updateProductsAvailability(itemsToUpdate) {
               });
             } else if (productinShopify.publishedAt == null) { //if product is not published
               // console.log(`this product${itemsWithProductIds[i].title} is not active , but its stock status is ${itemsWithProductIds[i].stock}`);
-              let tags = productinShopify.tags.filter(tag => tag !== 'Short Wait' && tag !== 'Call your Rep for Availability' && tag !== 'Not Available' && tag !== 'Long Wait' && tag !== 'Closeout/discontinued');
+              let tags = productinShopify.tags.filter(tag => tag !== 'Short Wait' && tag !== 'Call your Rep for Availability' && tag !== 'Not Available' && tag !== 'Long Wait');
               tags.push('Available Now');
               tags = tags.concat(itemsWithProductIds[i].categories);
               tags = filterUnwantedProductsFromCategories(tags, itemsWithProductIds[i].sku);
