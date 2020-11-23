@@ -396,7 +396,7 @@ async function createProduct(item) {
         "tags": product_tags,
         "variants": [{
           "title": "Default Title",
-          "price": item.price * 2.5,
+          "price": item.price * 2,
           "sku": item.sku,
           "inventory_policy": "continue",
           "fulfillment_service": "manual",
