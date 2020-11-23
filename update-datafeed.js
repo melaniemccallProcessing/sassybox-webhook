@@ -48,9 +48,9 @@ async function updateShopifyWithECNDataFeed() {
       var parser = new xmlParser.Parser();
       // let result;
       // fs.readFile(__dirname + '/test-small-batch.xml', function(err, data) {
-      parser.parseString(response.data, function (err, result) {
-        initUpdate(result);
-      });
+        parser.parseString(response.data, function (err, result) {
+          initUpdate(result);
+        });
       // });
     })
     .catch(response => {
@@ -184,28 +184,29 @@ async function updateProductsAvailability(itemsToUpdate) {
 
           if (productinShopify.tags.includes(itemsWithProductIds[i].stock)) {
             console.log(`no changes here for ${itemsWithProductIds[i].title}, product status is the same`);
-            // let tags = productinShopify.tags;
-            // tags = tags.concat(itemsWithProductIds[i].categories);  
-
-            // let product_id_withoutprefix = itemsWithProductIds[i].product_id.replace("gid://shopify/Product/", "")
-            // let productUpdate = {
-            //     "product": {
-            //       "id": product_id_withoutprefix,
-            //       "tags": tags
-            //     }
-            //   }
-            //   makeProductUpdate(productUpdate).then(response => {
-            //     // console.log(response);
-            //     console.log(`product updated with new categories successfully-->${response.data.product.title}`);
-            //     // console.log(response.data);
-            //   }).catch(err=> {
-            //       // console.log(err);
-            //       console.log('ERROR UPDATING NEW CATEGORIES for product-->'+ productinShopify.title + ' ' + err)
-            //   });  
+            let tags = productinShopify.tags.filter(tag => tag !== 'Available Now' && tag !== 'Short Wait' && tag !== 'Call your Rep for Availability' && tag !== 'Not Available' && tag !== 'Long Wait' && tag !== 'Closeout/discontinued');
+            tags.push(itemsWithProductIds[i].stock);
+            let publishedStatus = itemsWithProductIds[i].stock == 'Available Now' ? true : false;
+            let product_id_withoutprefix = itemsWithProductIds[i].product_id.replace("gid://shopify/Product/", "")
+            let productUpdate = {
+                "product": {
+                  "id": product_id_withoutprefix,
+                  "tags": tags,
+                  "published": publishedStatus
+                }
+              }
+              makeProductUpdate(productUpdate).then(response => {
+                // console.log(response);
+                console.log(`product updated with new categories successfully-->${response.data.product.title}`);
+                // console.log(response.data);
+              }).catch(err=> {
+                  // console.log(err);
+                  console.log('ERROR UPDATING NEW CATEGORIES for product-->'+ productinShopify.title + ' ' + err)
+              });  
           } else { //stock statuses are not the same
             // console.log(`Retrieved status from ECN for ${itemsWithProductIds[i].title} : ${itemsWithProductIds[i].stock} --> Shopifys status ${productinShopify.publishedAt},Shopifys tags ${productinShopify.tags}`)
             if (productinShopify.publishedAt !== null) { //if product is published
-              let tags = productinShopify.tags.filter(tag => tag !== 'Available Now');
+              let tags = productinShopify.tags.filter(tag => tag !== 'Available Now' && tag !== 'Short Wait' && tag !== 'Call your Rep for Availability' && tag !== 'Not Available' && tag !== 'Long Wait' && tag !== 'Closeout/discontinued');
               tags.push(itemsWithProductIds[i].stock);
               tags = tags.concat(itemsWithProductIds[i].categories);
               tags = filterUnwantedProductsFromCategories(tags, itemsWithProductIds[i].sku);
@@ -230,7 +231,7 @@ async function updateProductsAvailability(itemsToUpdate) {
               });
             } else if (productinShopify.publishedAt == null) { //if product is not published
               // console.log(`this product${itemsWithProductIds[i].title} is not active , but its stock status is ${itemsWithProductIds[i].stock}`);
-              let tags = productinShopify.tags.filter(tag => tag !== 'Short Wait' && tag !== 'Call your Rep for Availability' && tag !== 'Not Available');
+              let tags = productinShopify.tags.filter(tag => tag !== 'Short Wait' && tag !== 'Call your Rep for Availability' && tag !== 'Not Available' && tag !== 'Long Wait' && tag !== 'Closeout/discontinued');
               tags.push('Available Now');
               tags = tags.concat(itemsWithProductIds[i].categories);
               tags = filterUnwantedProductsFromCategories(tags, itemsWithProductIds[i].sku);
@@ -259,7 +260,8 @@ async function updateProductsAvailability(itemsToUpdate) {
         })
 
       } else { //Create product that doesn't exist
-        if (!itemsWithProductIds[i].categories.includes('Displays') && !itemsWithProductIds[i].categories.includes('Condom Bowls') && !itemsWithProductIds[i].categories.includes('Tester') && !itemsWithProductIds[i].categories.includes('Fishbowl') && !itemsWithProductIds[i].categories.includes('Cbd') && !itemsWithProductIds[i].title.includes('Hemp') && !isBadVendor(itemsWithProductIds[i].vendor) && !isBadProduct(itemsWithProductIds[i].sku) && !itemsWithProductIds[i].title.includes('bowl') && !itemsWithProductIds[i].title.includes('Bowl') && !itemsWithProductIds[i].title.includes('Display') && !itemsWithProductIds[i].title.includes('Case') && !itemsWithProductIds[i].title.includes('CD')) {
+        let productTitle = itemsWithProductIds[i].alternateTitle == ' ' || itemsWithProductIds[i].alternateTitle == '' ? itemsWithProductIds[i].title : itemsWithProductIds[i].alternateTitle;
+        if (!itemsWithProductIds[i].categories.includes('Displays') && !itemsWithProductIds[i].categories.includes('Condom Bowls') && !itemsWithProductIds[i].categories.includes('Tester') && !itemsWithProductIds[i].categories.includes('Fishbowl') && !itemsWithProductIds[i].categories.includes('Cbd') && !productTitle.includes('Hemp') && !isBadVendor(itemsWithProductIds[i].vendor) && !isBadProduct(itemsWithProductIds[i].sku) && !productTitle.includes('bowl') && !productTitle.includes('Bowl') && !productTitle.includes('Display') && !productTitle.includes('Case') && !productTitle.includes('CD') && !productTitle.includes('disc')) {
           await createProduct(itemsWithProductIds[i]).then(response => {
             console.log(`Product created successfully--> ${response.data.product.title}`);
             newItems += response.data.product.title + '<br>';
@@ -389,7 +391,7 @@ async function createProduct(item) {
     product_tags.push('New');
     let newProductObj = {
       "product": {
-        "title": item.alternateTitle == ' ' ? item.title : item.alternateTitle,
+        "title": item.alternateTitle == ' ' || item.alternateTitle == '' ? item.title : item.alternateTitle,
         "body_html": item.description,
         "vendor": item.vendor,
         "product_type": item.id,
@@ -414,7 +416,7 @@ async function createProduct(item) {
         "published": item.stock == 'Available Now' ? true : false
       }
     }
-    console.log("Product Object " + newProductObj);
+    // console.log(newProductObj);
     return axios({
       url: 'https://febe69a891c04a2e134443805cdcd304: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@try-sassy-box.myshopify.com/admin/api/2020-10/products.json',
       method: 'post',
