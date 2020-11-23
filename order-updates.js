@@ -115,7 +115,8 @@ async function processOrders(ordersToCheck) {
                         // processPartialOrder(cancelledItems,ordersToCheck[i],trackingInfo);
                     }   
                 } else if (order_status == 'Canceled') {
-
+                    let lineItems = result.content.orders[0].order[0].lineitems[0].item;
+                    processCancelledOrder(ordersToCheck[i],lineItems);
                     //nothing shipped
                     //send email to customer
                 }
@@ -123,6 +124,16 @@ async function processOrders(ordersToCheck) {
             });
         });
     }
+}
+function processCancelledOrder(orderObj, cancelledItems) {
+    sendCustomerEmailAboutPartialOrder(orderObj,cancelledItems);
+    let cancelOrderUrl = 'https://febe69a891c04a2e134443805cdcd304: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@try-sassy-box.myshopify.com/admin/api/2020-10/orders/' + orderObj.id + '/cancel.json';
+    axios.post(cancelOrderUrl).then(function() {
+        console.log('order cancelled successfully');
+        //email here
+    }).catch((err)=>{
+        //error email here 
+    })
 }
 
 function processFullOrder(orderObj,trackingInfo) {
@@ -132,6 +143,7 @@ function processFullOrder(orderObj,trackingInfo) {
     fulfillOrder(shopifyOrderId,trackingInfo.shipmentCarrier,trackingInfo.trackingNumber);
     capturePayment(shopifyOrderId, orderObj.total_price);
 }
+
 function processPartialOrder(cancelledItems,orderObj,trackingInfo) {
     let partialAmountToSubtract = 0;
     let shopifyOrderId = orderObj.id;
@@ -141,14 +153,18 @@ function processPartialOrder(cancelledItems,orderObj,trackingInfo) {
         //account for quantity and discount
         //orderObj.line_items[0].discount_allocations[0].amount
         let ecnCancelledItemSKU = cancelledItems[i].sku[0];
+        let ecnCancelledItemQuantity = Number(cancelledItems[i].cancelled[0]);
         let shopifyItem = shopifyOrderLineItems.find(item => ecnCancelledItemSKU == item.sku);
+
+        let cancelledItemDiscount = shopifyItem.discount_allocations[0] ? shopifyItem.discount_allocations[0].amount : 0;
+        
         cancelledItemsInShopify.push(shopifyItem);
-        partialAmountToSubtract += shopifyItem.price;
+        partialAmountToSubtract += ((shopifyItem.price * ecnCancelledItemQuantity) - cancelledItemDiscount);
     }
     let amountToCapture = orderObj.total_price - partialAmountToSubtract;
-    fulfillOrder(shopifyOrderId,trackingInfo.shipmentCarrier,trackingInfo.trackingNumber)
-    capturePayment(shopifyOrderId, amountToCapture)
-    sendCustomerEmailAboutPartialOrder(orderObj,cancelledItemsInShopify);
+    fulfillOrder(shopifyOrderId,trackingInfo.shipmentCarrier,trackingInfo.trackingNumber);
+    capturePayment(shopifyOrderId, amountToCapture);
+    // sendCustomerEmailAboutPartialOrder(orderObj,cancelledItems);
 }
 async function fulfillOrder(order_id, shippingCompany, trackingNum) {
     let shippingCompanyForShopify = determineShippingCompany(shippingCompany);
@@ -231,8 +247,11 @@ function sendCustomerEmailAboutPartialOrder(order, rejectedItems) {
     };
     let lineItemsStr =  '';
     rejectedItems.forEach(item => {
-        let line_item = order.line_items.find(item=> item.sku == rejectedItems.sku);
-        lineItemsStr += line_item.title + '   ' + 'QTY ' + line_item.quantity + ' $' + line_item.price + '\n';
+        let ecn_item = order.line_items.find(shopify_item => shopify_item.sku == rejectedItems.sku[0]);
+        let cancelledItemQty = ecn_item.cancelled[0];
+        let cancelledItemDiscount = shopifyItem.discount_allocations[0] ? shopifyItem.discount_allocations[0].amount : 0;
+
+        lineItemsStr += item.title + '   ' + 'QTY ' + cancelledItemQty + ' $' + (item.price - cancelledItemDiscount) + '\n';
     })
     let emailText = `Order Number: ${order.order_number}\n
     Order Date: ${order.created_at}\n\n

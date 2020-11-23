@@ -78,60 +78,7 @@ function sendErrEmail(mailOptions){
         }
     });
 }
-function sendErrEmailToCustomer(rejectedItems, order) {
-    var options = {
-        from: 'sassybox-dev@outlook.com',
-        to: 'bluescript17@gmail.com',
-        replyTo: 'contact@sassyboxshop.com',
-        subject: 'Items cancelled from your order',
-        html: ''
-    };
-    let lineItemsStr =  '';
-    rejectedItems.forEach(item => {
-        let line_item = order.line_items.find(item=> item.sku == rejectedItems.sku);
-        lineItemsStr += line_item.title + '   ' + 'QTY ' + line_item.quantity + ' $' + line_item.price + '\n';
-    })
-    let emailText = `Order Number: ${order.order_number}\n
-    Order Date: ${order.created_at}\n\n
 
-    Hi ${order.customer.first_name},\n
-    Unfortunately, the items listed below are no longer available. We're sorry for any inconvenience! We'll send you an email when the rest of your order ships. (You won't be charged for these canceled items, of course.) \n\n
-    Thank you for your patience, and please contact us by replying to this email if you have any questions or concerns.\n\n\n\n
-    <u>Good To Know</u>\n
-    Occasionally, we restock in-demand items. Keep an eye on <a href="sassyboxshop.com">SassyBoxShop.com</a> just in case.\n\n
-    If you paid by credit or debit card, your statement may reflect an authorization. This is not a charge. In most cases, it will fall off your account within 3 - 5 business days. Contact your financial institution if you have any issues.\n\n\n
-    <u>Your Cancelled Items</u>\n`;
-    emailText += lineItemsStr + '\n\n';
-    emailText += `<u>Shipping</u>\n
-    <b>Ship To</b>\n
-    ${order.shipping_address.first_name} ${order.shipping_address.last_name}\n
-    ${order.shipping_address.address1}\n
-    ${order.shipping_address.address2}\n
-    ${order.shipping_address.city}, ${order.shipping_address.province}\n
-    ${order.shipping_address.country} \n\n
-    <b>Shipping Method</b>\n
-    ${order.shipping_lines[0].title}\n\n
-    <u>Billing</u>\n
-    <b>Bill To</b>\n
-    ${order.billing_address.first_name} ${order.billing_address.last_name}\n
-    ${order.billing_address.address1}\n
-    ${order.billing_address.address2}\n
-    ${order.billing_address.city}, ${order.billing_address.province}\n
-    ${order.billing_address.country} \n\n
-    
-    <b>Payment Method</b>\n
-    ${order.payment_details.credit_card_company}\n
-    ${order.payment_details.credit_card_number}\n\n\n`;
-    options.html = emailText;
-
-    transporter.sendMail(mailOptions, function(err, info){
-        if (err) {
-          console.log('error sending error email' + err);
-        } else {
-          console.log('Items cancelled email sent: ' + info.response);
-        }
-    });
-}
 
 async function placeOrderToECN(order) {
     errorMailOptions.subject += order.order_number;
