@@ -1,5 +1,5 @@
 exports.getShippingId = function(shippingTitle) {
-    if(shippingTitle.includes('Free Shipping') || shippingTitle.includes('USPS- Domestic Standard')) {
+    if(shippingTitle.includes('Free Shipping') || shippingTitle.includes('Flat Rate')) {
         return 6;
     }
     if(shippingTitle.includes('Priority Express')) {
