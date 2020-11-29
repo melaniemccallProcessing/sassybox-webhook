@@ -777,7 +777,10 @@ let unwantedLingerieProducts = [
 
 let unwantedBathAndBodyProducts = [
     'XR-AE859',
-    'PD4682-23'
+    'PD4682-23',
+    'BOBM-HX11-CC',
+    'BOBM-HX5-CC'
+
 ]
 
 let unwantedVibratorProducts = [
@@ -856,7 +859,9 @@ let unwantedGelsAndCreams = [
 let unwantedWaterBased = [
     'DJ-1070-50-3',
     'DJ-1051-15-3',
-    'DJ-1051-05-3'
+    'DJ-1051-05-3',
+    'DJ-5334-06-3',
+    'DJ-8900-20-3'
 ]
 let unwantedLubricants = [
     'DJ-1070-50-3',
@@ -906,6 +911,55 @@ let unwantedAnalPlug = [
     'XPDRD518',
     'DJ-2402-10-3'
 ]
+let unwantedGames = [
+    'ELF5302',
+    'XR-AC304',
+    'PD4454-23',
+    'ESS440-01'
+]
+let unwantedNoveltyItems = [
+    'XR-AE728',
+    'BL-19200',
+    'NS1115-51',
+    'JJ10844'
+]
+let unwantedHarnessAccessories = [
+    'SE-1574-05-3'
+]
+let unwantedAccessories = [
+    'SE-1574-05-3'
+]
+let unwantedStrapOn = [
+    'BOBM-HX11-CC',
+    'BOBM-HX9-CC',
+    'BOBM-HX7-CC',
+    'BOBM-HX5-CC',
+    'EIS036',
+    'XR-AF651',
+    'ESS520-18',
+    'ESS520-17',
+    'XR-AF500',
+    'XR-AF569-XL',
+    'XR-AF569-LG',
+    'XR-AF569-MD',
+    'XR-AF569-SM',
+    'SHELC005BLK',
+    'XR-AE143',
+    'ESS694-03',
+    'SE-2712-75-3',
+    'PD4453-23'
+]
+let unwantedKits = [
+    'BOBM-HX11-CC',
+    'BOBM-HX9-CC',
+    'BOBM-HX7-CC',
+    'BOBM-HX5-CC'
+]
+let unwantedBathTimePlay = [
+    'BOBM-HX9-CC',
+    'BOBM-HX7-CC'
+
+]
 module.exports = {productsToExclude,
     unwantedBondageProducts,
     unwantedMasturbatorProducts,
@@ -928,4 +982,12 @@ module.exports = {productsToExclude,
     unwantedBendable,
     unwantedMouthMasturbator,
     unwantedDoubleDildo,
-    unwantedAnalPlug};
+    unwantedAnalPlug,
+    unwantedBathTimePlay,
+    unwantedKits,
+    unwantedStrapOn,
+    unwantedAccessories,
+    unwantedHarnessAccessories,
+    unwantedNoveltyItems,
+    unwantedGames
+};

@@ -551,6 +551,34 @@ function filterUnwantedProductsFromCategories(tags, sku) {
     console.log('Removing tag--Anal Plug from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Anal Plug');
   }
+  if (categoriesToReturn.includes('Games') && isBadGame(sku)){
+    console.log('Removing tag--Game from product: ' + sku)
+    categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Games');
+  }
+  if (categoriesToReturn.includes('Novelty Items') && isBadNoveltyItem(sku)){
+    console.log('Removing tag--Novelty Items from product: ' + sku)
+    categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Novelty Items');
+  }
+  if (categoriesToReturn.includes('Harness Accessories') && isBadHarnessAccessory(sku)){
+    console.log('Removing tag--Harness Accessories from product: ' + sku)
+    categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Harness Accessories');
+  }
+  if (categoriesToReturn.includes('strap-on') && isBadStrapOn(sku)){
+    console.log('Removing tag-- strap-on from product: ' + sku)
+    categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'strap-on');
+  }
+  if (categoriesToReturn.includes('Accessories') && isBadAccessory(sku)){
+    console.log('Removing tag-- Accessories from product: ' + sku)
+    categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Accessories');
+  }
+  if (categoriesToReturn.includes('Kit') && isBadKit(sku)){
+    console.log('Removing tag-- Kit from product: ' + sku)
+    categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Kit');
+  }
+  if (categoriesToReturn.includes('Bath Time Play') && isBadBathTimePlay(sku)){
+    console.log('Removing tag-- Bath Time Play from product: ' + sku)
+    categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Bath Time Play');
+  }
   return categoriesToReturn;
 }
 
@@ -645,5 +673,33 @@ function isBadDoubleDildo(sku) {
 }
 function isBadAnalPlug(sku) {
   let unwantedProducts = exclusion_list.unwantedAnalPlug;
+  return unwantedProducts.includes(sku);
+}
+function isBadBathTimePlay(sku) {
+  let unwantedProducts = exclusion_list.unwantedBathTimePlay;
+  return unwantedProducts.includes(sku);
+}
+function isBadKit(sku) {
+  let unwantedProducts = exclusion_list.unwantedKits;
+  return unwantedProducts.includes(sku);
+}
+function isBadStrapOn(sku) {
+  let unwantedProducts = exclusion_list.unwantedStrapOn;
+  return unwantedProducts.includes(sku);
+}
+function isBadAccessory(sku) {
+  let unwantedProducts = exclusion_list.unwantedAccessories;
+  return unwantedProducts.includes(sku);
+}
+function isBadHarnessAccessory(sku) {
+  let unwantedProducts = exclusion_list.unwantedHarnessAccessories;
+  return unwantedProducts.includes(sku);
+}
+function isBadNoveltyItem(sku) {
+  let unwantedProducts = exclusion_list.unwantedNoveltyItems;
+  return unwantedProducts.includes(sku);
+}
+function isBadGame(sku) {
+  let unwantedProducts = exclusion_list.unwantedGames;
   return unwantedProducts.includes(sku);
 }
