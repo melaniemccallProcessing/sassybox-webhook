@@ -31,9 +31,9 @@ var mailOptions = {
   subject: 'DataFeed Update',
   html: ''
 };
-let updatedItems = '';
-let newItems = '';
-let deletedItems = '';
+let updatedItems = [];
+let newItems = [];
+let deletedItems = [];
 
 updateShopifyWithECNDataFeed();
 
@@ -223,7 +223,7 @@ async function updateProductsAvailability(itemsToUpdate) {
               makeProductUpdate(productUpdate).then(response => {
                 // console.log(response);
                 console.log(`product updated successfully-->${response.data.product.title}`);
-                updatedItems += response.data.product.title + '<br>';
+                updatedItems.push(response.data.product.title);
                 // console.log(response.data);
               }).catch(err => {
                 // console.log(err);
@@ -248,7 +248,7 @@ async function updateProductsAvailability(itemsToUpdate) {
               makeProductUpdate(productUpdate).then(response => {
                 console.log(`product updated successfully-->${response.data.product.title}`);
                 // console.log(response.data);
-                updatedItems += response.data.product.title + '<br>';
+                updatedItems.push(response.data.product.title);
               }).catch(err => {
                 console.log('ERROR UPDATING PRODUCT-->' + productinShopify.title + ' ' + err);
               });
@@ -264,7 +264,7 @@ async function updateProductsAvailability(itemsToUpdate) {
         if (!itemsWithProductIds[i].categories.includes('Displays') && !itemsWithProductIds[i].categories.includes('Condom Bowls') && !itemsWithProductIds[i].categories.includes('Tester') && !itemsWithProductIds[i].categories.includes('Fishbowl') && !itemsWithProductIds[i].categories.includes('Cbd') && !productTitle.includes('Hemp') && !isBadVendor(itemsWithProductIds[i].vendor) && !isBadProduct(itemsWithProductIds[i].sku) && !productTitle.includes('bowl') && !productTitle.includes('Bowl') && !productTitle.includes('Display') && !productTitle.includes('Case') && !productTitle.includes('CD') && !productTitle.includes('disc')) {
           await createProduct(itemsWithProductIds[i]).then(response => {
             console.log(`Product created successfully--> ${response.data.product.title}`);
-            newItems += response.data.product.title + '<br>';
+            newItems.push(response.data.product.title);
           }).catch(err => {
             console.log(`ERROR creating product ${err}`);
           })
@@ -284,7 +284,7 @@ async function updateProductsAvailability(itemsToUpdate) {
         }
         await makeProductUpdateASYNC(productUpdate).then(response => {
           console.log(`product "deleted" successfully${response.data.product.title}`);
-          deletedItems += response.data.product.title + '<br>';
+          deletedItems.push(response.data.product.title);
         }).catch(err => {
           console.log('ERROR deleting product' + err.data);
           //send err email for error deleting product
@@ -430,14 +430,29 @@ async function createProduct(item) {
 
 function sendEmail(updatedItems,newItems,deletedItems) {
   let strToSend = '<b>Datafeed Updates: </b><br><br>';
+
   if (newItems) {
-    strToSend += '<b>New Items:</b><br>' + newItems + '<br>';
+    let newItemsFiltered =  newItems.filter(product => !deletedItems.includes(product));
+    let newItemsStr = '';
+    newItemsFiltered.forEach(product => {
+      newItemsStr += product + '<br>'
+    });
+    strToSend += '<b>New Items:</b><br>' + newItemsStr + '<br>';
   }
   if(updatedItems) {
-    strToSend += '<b>Updated Items:</b><br>' + updatedItems + '<br>';
+    let updatedItemsFiltered =  updatedItems.filter(product => !deletedItems.includes(product));
+    let updatedItemsStr = '';
+    updatedItemsFiltered.forEach(product => {
+      updatedItemsStr += product + '<br>'
+    });
+    strToSend += '<b>Updated Items:</b><br>' + updatedItemsStr + '<br>';
   }
   if(deletedItems) {
-    strToSend += '<b>Deleted Items:</b><br>' + deletedItems + '<br>';
+    let deletedItemsStr = '';
+    deletedItems.forEach(product => {
+      deletedItemsStr += product + '<br>'
+    });
+    strToSend += '<b>Deleted Items:</b><br>' + deletedItemsStr + '<br>';
   }
   mailOptions.html = strToSend;
   transporter.sendMail(mailOptions, function(err, info){
