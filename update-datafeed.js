@@ -126,31 +126,36 @@ function parseXML(itemsToLoop, action) {
   for (let i = 0; i < itemsToLoop.length; i++) {
     let item = {};
     if (action == 'update') {
-      item.title = itemsToLoop[i]['title'][0];
-      item.sku = itemsToLoop[i]['itemSKU'][0];
-      item.alternateTitle = itemsToLoop[i]['alternatetitle'][0];
-      item.id = itemsToLoop[i]['itemID'][0];
-      item.price = itemsToLoop[i]['standardPrice'][0];
-      item.multiplesOf = itemsToLoop[i]['multiplesOF'][0];
-      item.vendor = itemsToLoop[i]['manufacturer'][0];
-      item.description = itemsToLoop[i]['itemDescription'][0];
-      item.barcode = itemsToLoop[i]['upc'][0];
-      item.image1 = 'https://s3.amazonaws.com/ecn-watermarks/effex/' + itemsToLoop[i]['itemID'][0] + '_2.jpg';
-      item.image2 = 'https://s3.amazonaws.com/ecn-watermarks/effex/' + itemsToLoop[i]['itemID'][0] + '_1.jpg';
-      let mastercategories = itemsToLoop[i].categoriesV2[0].categoritem[0].mastercategories[0].split("|");
-      let subcategories = itemsToLoop[i].categoriesV2[0].categoritem[0].subcategories[0].split("|");
-      let combined_categories = mastercategories.concat(subcategories);
-      item.categories = combined_categories.filter(item => item != '');
+      if(Number(itemsToLoop[i]['multiplesOF'][0]) == 1) {
+        item.title = itemsToLoop[i]['title'][0];
+        item.sku = itemsToLoop[i]['itemSKU'][0];
+        item.alternateTitle = itemsToLoop[i]['alternatetitle'][0];
+        item.id = itemsToLoop[i]['itemID'][0];
+        item.price = itemsToLoop[i]['standardPrice'][0];
+        item.multiplesOf = itemsToLoop[i]['multiplesOF'][0];
+        item.vendor = itemsToLoop[i]['manufacturer'][0];
+        item.description = itemsToLoop[i]['itemDescription'][0];
+        item.barcode = itemsToLoop[i]['upc'][0];
+        item.image1 = 'https://s3.amazonaws.com/ecn-watermarks/effex/' + itemsToLoop[i]['itemID'][0] + '_2.jpg';
+        item.image2 = 'https://s3.amazonaws.com/ecn-watermarks/effex/' + itemsToLoop[i]['itemID'][0] + '_1.jpg';
+        let mastercategories = itemsToLoop[i].categoriesV2[0].categoritem[0].mastercategories[0].split("|");
+        let subcategories = itemsToLoop[i].categoriesV2[0].categoritem[0].subcategories[0].split("|");
+        let combined_categories = mastercategories.concat(subcategories);
+        item.categories = combined_categories.filter(item => item != '');
 
-      item.stock = itemsToLoop[i]['stock'][0];
-      item.modifyAction = 'update';
+        item.stock = itemsToLoop[i]['stock'][0];
+        item.modifyAction = 'update';
+        arrToReturn.push(item);
+
+      }
     }
     if (action == 'delete') {
       item.sku = itemsToLoop[i]['itemSKU'][0];
       item.modifyAction = 'delete';
+      arrToReturn.push(item);
 
     }
-    arrToReturn.push(item);
+    
 
   }
   return arrToReturn;
