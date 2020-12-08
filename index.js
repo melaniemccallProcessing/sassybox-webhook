@@ -98,8 +98,8 @@ async function placeOrderToECN(order) {
                 <ordertotal>${order.total_price}</ordertotal>
                 <clientid>6678</clientid>
                 <clientstoreid>791</clientstoreid>
-                <firstname>${order.customer.first_name}</firstname>
-                <lastname>${order.customer.last_name}</lastname>
+                <firstname>${order.shipping_address.first_name}</firstname>
+                <lastname>${order.shipping_address.last_name}</lastname>
                 <email>${order.customer.email}</email>
                 <phone1>${order.customer.phone}</phone1>
                 <phone2></phone2>
