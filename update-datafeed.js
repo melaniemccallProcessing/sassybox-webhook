@@ -31,6 +31,16 @@ var mailOptions = {
   subject: 'DataFeed Update',
   html: ''
 };
+var xmlMailOptions = {
+  from: {
+      name: 'SassyBox Shop',
+      address: 'sassybox-dev@outlook.com'
+  },
+  to: 'sassybox-dev@outlook.com',
+  replyTo: 'contact@sassyboxshop.com',
+  subject: 'DataFeed XML',
+  html: ''
+};
 let updatedItems = [];
 let newItems = [];
 let deletedItems = [];
@@ -48,7 +58,8 @@ async function updateShopifyWithECNDataFeed() {
       var parser = new xmlParser.Parser();
       // let result;
       // fs.readFile(__dirname + '/test-small-batch.xml', function(err, data) {
-        parser.parseString(response.data, function (err, result) {
+      sendXMLEmail(response.data);  
+      parser.parseString(response.data, function (err, result) {
           initUpdate(result);
         });
       // });
@@ -479,6 +490,16 @@ function sendErrEmail(error) {
     }
   });
   
+}
+function sendXMLEmail(xml) {
+  xmlMailOptions.html = xml;
+  transporter.sendMail(mailOptions, function(err, info){
+    if (err) {
+      console.log('error sending XML email' + err);
+    } else {
+      console.log('XML email sent: ' + info.response);
+    }
+  });
 }
 function filterUnwantedProductsFromCategories(tags, sku) {
   let categoriesToReturn = tags;
