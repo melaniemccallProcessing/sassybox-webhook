@@ -39,7 +39,7 @@ var xmlMailOptions = {
   to: 'sassybox-dev@outlook.com',
   replyTo: 'contact@sassyboxshop.com',
   subject: 'DataFeed XML',
-  html: ''
+  text: ''
 };
 let updatedItems = [];
 let newItems = [];
@@ -492,7 +492,7 @@ function sendErrEmail(error) {
   
 }
 function sendXMLEmail(xml) {
-  xmlMailOptions.html = xml;
+  xmlMailOptions.text = xml;
   transporter.sendMail(xmlMailOptions, function(err, info){
     if (err) {
       console.log('error sending XML email' + err);
