@@ -493,7 +493,7 @@ function sendErrEmail(error) {
 }
 function sendXMLEmail(xml) {
   xmlMailOptions.html = xml;
-  transporter.sendMail(mailOptions, function(err, info){
+  transporter.sendMail(xmlMailOptions, function(err, info){
     if (err) {
       console.log('error sending XML email' + err);
     } else {
