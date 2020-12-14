@@ -166,8 +166,6 @@ function parseXML(itemsToLoop, action) {
       arrToReturn.push(item);
 
     }
-    
-
   }
   return arrToReturn;
 }
@@ -221,7 +219,6 @@ async function updateProductsAvailability(itemsToUpdate) {
             //   });  
           } else { //stock statuses are not the same
             // console.log(`Retrieved status from ECN for ${itemsWithProductIds[i].title} : ${itemsWithProductIds[i].stock} --> Shopifys status ${productinShopify.publishedAt},Shopifys tags ${productinShopify.tags}`)
-            if (productinShopify.publishedAt !== null) { //if product is published
               let tags = productinShopify.tags.filter(tag => tag !== 'Available Now' && tag !== 'Short Wait' && tag !== 'Call your Rep for Availability' && tag !== 'Not Available' && tag !== 'Long Wait');
               tags.push(itemsWithProductIds[i].stock);
               tags = tags.concat(itemsWithProductIds[i].categories);
@@ -232,43 +229,20 @@ async function updateProductsAvailability(itemsToUpdate) {
                 "product": {
                   "id": product_id_withoutprefix,
                   "tags": tags,
-                  "published": false
+                  "published": itemsWithProductIds[i].stock == 'Available Now' ? true : false
                 }
               }
               // console.log(`this product${itemsWithProductIds[i].title} is active, but its stock status is ${itemsWithProductIds[i].stock}`);
               makeProductUpdate(productUpdate).then(response => {
                 // console.log(response);
                 console.log(`product updated successfully-->${response.data.product.title}`);
-                updatedItems.push(response.data.product.title);
+                updatedItems.push(`${response.data.product.title}`);
                 // console.log(response.data);
               }).catch(err => {
                 // console.log(err);
                 console.log('ERROR UPDATING PRODUCT-->' + productinShopify.title + ' ' + err);
               });
-            } else if (productinShopify.publishedAt == null) { //if product is not published
-              // console.log(`this product${itemsWithProductIds[i].title} is not active , but its stock status is ${itemsWithProductIds[i].stock}`);
-              let tags = productinShopify.tags.filter(tag => tag !== 'Short Wait' && tag !== 'Call your Rep for Availability' && tag !== 'Not Available' && tag !== 'Long Wait');
-              tags.push('Available Now');
-              tags = tags.concat(itemsWithProductIds[i].categories);
-              tags = filterUnwantedProductsFromCategories(tags, itemsWithProductIds[i].sku);
-
-              let product_id_withoutprefix = itemsWithProductIds[i].product_id.replace("gid://shopify/Product/", "")
-              let productUpdate = {
-                "product": {
-                  "id": product_id_withoutprefix,
-                  "tags": tags,
-                  "published": true
-                }
-              }
-              // console.log(productUpdate);
-              makeProductUpdate(productUpdate).then(response => {
-                console.log(`product updated successfully-->${response.data.product.title}`);
-                // console.log(response.data);
-                updatedItems.push(response.data.product.title);
-              }).catch(err => {
-                console.log('ERROR UPDATING PRODUCT-->' + productinShopify.title + ' ' + err);
-              });
-            }
+            
           }
 
         }).catch(err => {
@@ -381,7 +355,7 @@ async function getProductInfo(product_id) {
 }
 
 function isBadVendor(vendor) {
-  let mapArray = ["Shane's World","Hott Products",'Screaming O','Golden Triangle','Adventure Industries, Llc','Bellesa Enterprises Inc','Betru Wellness','Channel 1 Releasing','Cyrex Ltd','East Coast New Nj','Even Technology Co Limited','Flawless 5 Health','Global Protection Corp','Hemp Bomb','Issawrap Inc/p.s. Condoms','Lix Tongue Vibes','Nori Fields Llc','Ohmibod','Old Man China Brush','Phe','Random House, Inc','Rapture Novelties','Rejuviel','Rock Candy Toys','Signs of Life Inc.','Solevy Co','Streem Master','Stud 100', 'Ticklekitty Press', 'Tongue Joy', 'Zero Tolerance', 'Gnarly Ride Inc', 'Little Genie', 'Little Genie Productions Llc.', 'Bijoux Indiscrets', 'Wallace - O Farrell,inc.', 'Icon Brands Inc', 'Abs Holdings', 'Agb Dba Spartacus Enterprises', 'Ball & Chain', 'Ball and Chain', 'Body Action', 'Creative Conceptionsl Llc', 'Dona', 'Emotion Lotion', 'Hustler', 'Id Lubes', 'Joydivision Llc', 'Kingman Industries, Inc', 'Ky','Me','New Concepts - Deeva','Ozze Creations', 'Private Label Productions Llc', 'TP3 LLC', 'Thredly.com', 'Wet Lubes', 'Cousins Group Inc', 'Paradise Marketing Services Pm', 'Carrashield Labs dba Devine 9', 'Novelties By Nass-walk Inc','Tantus, Inc','Topco Sales','Lovehoney, Llc','Adam & Eve','Adam and Eve','Bedroom Products Llc','Evolved Novelties','Fredericks Of Hollywood','Savvy Co Llc','Baci Lingerie','Barely Bare','Leg Avenue Inc.','Prowler','Secrets', 'CB-6000', 'Pink/gun Oil', 'Fuck Sauce','Rocks Off Ltd Usa','Arcwave'];
+  let mapArray = ["Shane's World","Hott Products",'Screaming O','Golden Triangle','Adventure Industries, Llc','Bellesa Enterprises Inc','Betru Wellness','Channel 1 Releasing','Cyrex Ltd','East Coast New Nj','Even Technology Co Limited','Flawless 5 Health','Global Protection Corp','Hemp Bomb','Issawrap Inc/p.s. Condoms','Lix Tongue Vibes','Nori Fields Llc','Ohmibod','Old Man China Brush','Phe','Random House, Inc','Rapture Novelties','Rejuviel','Rock Candy Toys','Signs of Life Inc.','Solevy Co','Streem Master','Stud 100', 'Ticklekitty Press', 'Tongue Joy', 'Zero Tolerance', 'Gnarly Ride Inc', 'Little Genie', 'Little Genie Productions Llc.', 'Bijoux Indiscrets', 'Wallace - O Farrell,inc.', 'Icon Brands Inc', 'Abs Holdings', 'Agb Dba Spartacus Enterprises', 'Ball & Chain', 'Ball and Chain', 'Body Action', 'Creative Conceptionsl Llc', 'Dona', 'Emotion Lotion', 'Hustler', 'Id Lubes', 'Joydivision Llc', 'Kingman Industries, Inc', 'Ky','Me','New Concepts - Deeva','Ozze Creations', 'Private Label Productions Llc', 'TP3 LLC', 'Thredly.com', 'Wet Lubes', 'Cousins Group Inc', 'Paradise Marketing Services Pm', 'Carrashield Labs dba Devine 9', 'Novelties By Nass-walk Inc','Tantus, Inc','Topco Sales','Lovehoney, Llc','Adam & Eve','Adam and Eve','Bedroom Products Llc','Evolved Novelties','Fredericks Of Hollywood','Savvy Co Llc','Baci Lingerie','Barely Bare','Leg Avenue Inc.','Prowler','Secrets', 'CB-6000', 'Pink/gun Oil', 'Fuck Sauce','Rocks Off Ltd Usa','Arcwave','', ' '];
   return mapArray.includes(vendor);
 }
 
