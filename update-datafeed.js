@@ -433,7 +433,7 @@ function sendEmail(updatedItems,newItems,deletedItems) {
     let updatedItemsFiltered =  updatedItems.filter(product => !deletedItems.includes(product.name));
     let updatedItemsStr = '';
     updatedItemsFiltered.forEach(product => {
-      updatedItemsStr += product.name + ', New Status: ' + product.status + '<br>'
+      updatedItemsStr += product.name + '--------- New Status: ' + product.status + '<br>'
     });
     strToSend += '<b>Updated Items:</b><br>' + updatedItemsStr + '<br>';
   }
