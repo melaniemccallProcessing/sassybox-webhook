@@ -236,7 +236,7 @@ async function updateProductsAvailability(itemsToUpdate) {
               makeProductUpdate(productUpdate).then(response => {
                 // console.log(response);
                 console.log(`product updated successfully-->${response.data.product.title}`);
-                updatedItems.push(`${response.data.product.title}`);
+                updatedItems.push({name:response.data.product.title, status:itemsWithProductIds[i].stock});
                 // console.log(response.data);
               }).catch(err => {
                 // console.log(err);
@@ -430,10 +430,10 @@ function sendEmail(updatedItems,newItems,deletedItems) {
     strToSend += '<b>New Items:</b><br>' + newItemsStr + '<br>';
   }
   if(updatedItems) {
-    let updatedItemsFiltered =  updatedItems.filter(product => !deletedItems.includes(product));
+    let updatedItemsFiltered =  updatedItems.filter(product => !deletedItems.includes(product.name));
     let updatedItemsStr = '';
     updatedItemsFiltered.forEach(product => {
-      updatedItemsStr += product + '<br>'
+      updatedItemsStr += product.name + ', New Status: ' + product.status + '<br>'
     });
     strToSend += '<b>Updated Items:</b><br>' + updatedItemsStr + '<br>';
   }
