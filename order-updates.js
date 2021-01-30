@@ -78,7 +78,8 @@ var parser = new xmlParser.Parser();
 async function processOrders(ordersToCheck) {
    
     for(let i = 0; i < ordersToCheck.length; i++) {
-        let orderId = ordersToCheck[i].ecnOrderId; 
+        let orderId = ordersToCheck[i].ecnOrderId;
+         
         await grabOrderStatus(orderId).then(response => {
             // console.log(response)
             xmlParser.parseString(response, function(err,result) {
@@ -101,6 +102,7 @@ async function processOrders(ordersToCheck) {
                     for(let i = 0; i < lineItems.length; i++) {
                         if (lineItems[i].cancelled[0] != '0') { //some cancelled quantities here
                             cancelledItems.push(lineItems[i]);
+                            console.log(lineItems[i]);
                         } else {  //packaged items yay!
                             packagedItems.push(lineItems[i]);
                             console.log(lineItems[i])
@@ -110,13 +112,15 @@ async function processOrders(ordersToCheck) {
                     console.log('packaged Items: ' + packagedItems);
                     console.log('cancelled Items: ' + cancelledItems);
                     if(totalItemsOrdered == packagedItems.length) { //everything seems fine...
-                        processFullOrder(ordersToCheck[i],trackingInfo)
+                        processFullOrder(ordersToCheck[i],trackingInfo);
+                        console.log('we can process the whole order');
                     } else {
+                        console.log('this is a partial order');
                         // processPartialOrder(cancelledItems,ordersToCheck[i],trackingInfo);
                     }   
                 } else if (order_status == 'Canceled') {
                     let lineItems = result.content.orders[0].order[0].lineitems[0].item;
-                    processCancelledOrder(ordersToCheck[i],lineItems);
+                    // processCancelledOrder(ordersToCheck[i],lineItems);
                     //nothing shipped
                     //send email to customer
                 }
@@ -127,6 +131,7 @@ async function processOrders(ordersToCheck) {
 }
 function processCancelledOrder(orderObj, cancelledItems) {
     sendCustomerEmailAboutPartialOrder(orderObj,cancelledItems);
+    //DONT CANCEL ORDER, JUST ARCHIVE
     let cancelOrderUrl = 'https://febe69a891c04a2e134443805cdcd304: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@try-sassy-box.myshopify.com/admin/api/2020-10/orders/' + orderObj.id + '/cancel.json';
     axios.post(cancelOrderUrl).then(function() {
         console.log('order cancelled successfully');
@@ -138,10 +143,12 @@ function processCancelledOrder(orderObj, cancelledItems) {
 
 function processFullOrder(orderObj,trackingInfo) {
     let shopifyOrderId = orderObj.id;
-    // console.log();
+    
+    let total_price = orderObj.current_total_price ? orderObj.current_total_price : orderObj.total_price;
+    console.log(total_price);
     // console.log('shopify order id: ' + shopifyOrderId);
+    capturePayment(shopifyOrderId, total_price);
     fulfillOrder(shopifyOrderId,trackingInfo.shipmentCarrier,trackingInfo.trackingNumber);
-    capturePayment(shopifyOrderId, orderObj.total_price);
 }
 
 function processPartialOrder(cancelledItems,orderObj,trackingInfo) {
@@ -154,36 +161,50 @@ function processPartialOrder(cancelledItems,orderObj,trackingInfo) {
         //orderObj.line_items[0].discount_allocations[0].amount
         let ecnCancelledItemSKU = cancelledItems[i].sku[0];
         let ecnCancelledItemQuantity = Number(cancelledItems[i].cancelled[0]);
+        console.log('ecnCancelledItemSKU' + ecnCancelledItemSKU);
+        console.log('ecnCancelledItemQuantity ' + ecnCancelledItemQuantity);
         let shopifyItem = shopifyOrderLineItems.find(item => ecnCancelledItemSKU == item.sku);
-
+        console.log(shopifyItem.price);
         let cancelledItemDiscount = shopifyItem.discount_allocations[0] ? shopifyItem.discount_allocations[0].amount : 0;
-        
+        console.log('cancelledItemDiscount: ' + cancelledItemDiscount);
+
         cancelledItemsInShopify.push(shopifyItem);
         partialAmountToSubtract += ((shopifyItem.price * ecnCancelledItemQuantity) - cancelledItemDiscount);
     }
-    let amountToCapture = orderObj.total_price - partialAmountToSubtract;
+    let total_price = orderObj.current_total_price ? orderObj.current_total_price : orderObj.total_price;
+
+    console.log('total price ' + total_price);
+    console.log('partialAmountToSubtract '+ partialAmountToSubtract);
+    let amountToCapture = (total_price - partialAmountToSubtract).toFixed(2);
+    console.log('Amount to Capture: ' + amountToCapture);
     fulfillOrder(shopifyOrderId,trackingInfo.shipmentCarrier,trackingInfo.trackingNumber);
     capturePayment(shopifyOrderId, amountToCapture);
-    // sendCustomerEmailAboutPartialOrder(orderObj,cancelledItems);
+    // console.log(orderObj.customer.email);
+    sendCustomerEmailAboutPartialOrder(orderObj,cancelledItems);
 }
 async function fulfillOrder(order_id, shippingCompany, trackingNum) {
     let shippingCompanyForShopify = determineShippingCompany(shippingCompany);
+    // let trackingNumberStr = "" + trackingNum;
     console.log('shipping Company: ' + shippingCompanyForShopify); 
     
     let fulfillmentURL = 'https://febe69a891c04a2e134443805cdcd304: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@try-sassy-box.myshopify.com/admin/api/2020-10/orders/' + order_id + '/fulfillments.json';
-    let fulfillment = {
+    
+    let fulfillmentObj = 
+    {
         "fulfillment": {
-          "location_id": "15445622851",
+          "location_id": 31145721923,
           "tracking_number": trackingNum,
-          "tracking_company": shippingCompany,
+          "tracking_company": shippingCompanyForShopify,
           "notify_customer": true
         }
-    };
-    axios.post(fulfillmentURL, fulfillment).then(function(){
+      };
+    console.log(fulfillmentObj);
+    console.log(fulfillmentURL);
+    axios.post(fulfillmentURL, fulfillmentObj).then(function(){
         console.log('order has been fulfilled.. customer has been notified');
     }).catch(function(err){
-        console.log('error sending order fulfillment!' + err)
-        //error email here
+        console.log('error sending order fulfillment!' + err);
+        // error email here
     });
 }
 async function capturePayment(order_id, amount){
@@ -202,6 +223,7 @@ async function capturePayment(order_id, amount){
               "authorization": authKey
             }
           };
+          console.log(capturePaymentObj);
         axios.post(transactionUrl, capturePaymentObj).then(function(){
             console.log('transaction captured')
         }).catch(function(err) {
@@ -238,54 +260,66 @@ async function grabOrderStatus (orderId) {
 }
 
 function sendCustomerEmailAboutPartialOrder(order, rejectedItems) {
-    var options = {
-        from: 'sassybox-dev@outlook.com',
-        to: 'bluescript17@gmail.com',
+    var mailOptions = {
+        from: {
+            name: 'Sassy Box',
+            address: 'sassybox-dev@outlook.com'
+        },
+        // to: 'bluescript17@gmail.com',
+        to: order.customer.email,
         replyTo: 'contact@sassyboxshop.com',
         subject: 'Items cancelled from your order',
         html: ''
     };
     let lineItemsStr =  '';
+    // console.log(rejectedItems);
     rejectedItems.forEach(item => {
-        let ecn_item = order.line_items.find(shopify_item => shopify_item.sku == rejectedItems.sku[0]);
-        let cancelledItemQty = ecn_item.cancelled[0];
-        let cancelledItemDiscount = shopifyItem.discount_allocations[0] ? shopifyItem.discount_allocations[0].amount : 0;
-
-        lineItemsStr += item.title + '   ' + 'QTY ' + cancelledItemQty + ' $' + (item.price - cancelledItemDiscount) + '\n';
+        let shopify_item = order.line_items.find(shopify_item => shopify_item.sku == item.sku[0]);
+        // console.log(shopify_item);
+        let cancelledItemQty = item.cancelled[0];
+        let cancelledItemDiscount = shopify_item.discount_allocations[0] ? shopify_item.discount_allocations[0].amount : 0;
+        // console.log(cancelledItemQty);
+        // console.log(cancelledItemDiscount);
+        lineItemsStr += shopify_item.title + '&nbsp;&nbsp;&nbsp;&nbsp;' + 'QTY ' + cancelledItemQty + '&nbsp;&nbsp;&nbsp;&nbsp;$' + (shopify_item.price - cancelledItemDiscount) + '<br>';
     })
-    let emailText = `Order Number: ${order.order_number}\n
-    Order Date: ${order.created_at}\n\n
+    console.log(lineItemsStr);
+    let emailText = `<b>Order Number:</b> ${order.order_number}<br><br>
 
-    Hi ${order.customer.first_name},\n
-    Unfortunately, the items listed below are no longer available. We're sorry for any inconvenience! We'll send you an email when the rest of your order ships. (You won't be charged for these canceled items, of course.) \n\n
-    Thank you for your patience, and please contact us by replying to this email if you have any questions or concerns.\n\n\n\n
-    <u>Good To Know</u>\n
-    Occasionally, we restock in-demand items. Keep an eye on <a href="sassyboxshop.com">SassyBoxShop.com</a> just in case.\n\n
-    If you paid by credit or debit card, your statement may reflect an authorization. This is not a charge. In most cases, it will fall off your account within 3 - 5 business days. Contact your financial institution if you have any issues.\n\n\n
-    <u>Your Cancelled Items</u>\n`;
-    emailText += lineItemsStr + '\n\n';
-    emailText += `<u>Shipping</u>\n
-    <b>Ship To</b>\n
-    ${order.shipping_address.first_name} ${order.shipping_address.last_name}\n
-    ${order.shipping_address.address1}\n
-    ${order.shipping_address.address2}\n
-    ${order.shipping_address.city}, ${order.shipping_address.province}\n
-    ${order.shipping_address.country} \n\n
-    <b>Shipping Method</b>\n
-    ${order.shipping_lines[0].title}\n\n
-    <u>Billing</u>\n
-    <b>Bill To</b>\n
-    ${order.billing_address.first_name} ${order.billing_address.last_name}\n
-    ${order.billing_address.address1}\n
-    ${order.billing_address.address2}\n
-    ${order.billing_address.city}, ${order.billing_address.province}\n
-    ${order.billing_address.country} \n\n
+    Hi ${order.customer.first_name},<br><br>
+    Unfortunately, the items listed below are no longer available. We're sorry for any inconvenience! We'll send you an email when the rest of your order ships. (You won't be charged for these canceled items, of course.) <br><br>
+    Thank you for your patience, and please contact us by replying to this email if you have any questions or concerns.<br><br>
+    <u><b>Good To Know</b></u><br>
+    Occasionally, we restock in-demand items. Keep an eye on <a href="sassyboxshop.com">SassyBoxShop.com</a> just in case.<br><br>
+    If you paid by credit or debit card, your statement may reflect an authorization. This is not a charge. In most cases, it will fall off your account within 3 - 5 business days. Contact your financial institution if you have any issues.<br><br>
+    <b><u>Your Cancelled Items</u></b><br>
+     ${lineItemsStr}<br><br>
+    <u><b>Shipping</b></u><br>
+    <u>Ship To</u><br>
+    ${order.shipping_address.first_name} ${order.shipping_address.last_name}<br>
+    ${order.shipping_address.address1}<br>`;
+    if(order.shipping_address.address2) {
+       emailText += `${order.shipping_address.address2} <br>`
+    }
+    emailText += `${order.shipping_address.city}, ${order.shipping_address.province}<br>
+    ${order.shipping_address.country} <br><br>
+    <u>Shipping Method</u><br>
+    ${order.shipping_lines[0].title}<br><br>
+    <u><b>Billing</b></u><br>
+    <u>Bill To</u><br>
+    ${order.billing_address.first_name} ${order.billing_address.last_name}<br>
+    ${order.billing_address.address1}<br>`;
+    if(order.billing_address.address2) {
+        emailText += `${order.billing_address.address2} <br>`
+     };
+     emailText +=
+    `${order.billing_address.city}, ${order.billing_address.province}<br>
+    ${order.billing_address.country} <br><br>
     
-    <b>Payment Method</b>\n
-    ${order.payment_details.credit_card_company}\n
-    ${order.payment_details.credit_card_number}\n\n\n`;
-    options.html = emailText;
-
+    <b><u>Payment Method</u></b><br>
+    ${order.payment_details.credit_card_company}<br>
+    ${order.payment_details.credit_card_number}<br><br><br>`;
+    mailOptions.html = emailText;
+    
     transporter.sendMail(mailOptions, function(err, info){
         if (err) {
           console.log('error sending error email' + err);
@@ -297,15 +331,15 @@ function sendCustomerEmailAboutPartialOrder(order, rejectedItems) {
 
 function determineShippingCompany(shippingCompany) {
     if(shippingCompany.includes('DHL')) {
-        return 'DHL eCommerce';
+        return "DHL eCommerce";
     }
     if(shippingCompany.includes('USPS')) {
-        return 'USPS';
+        return "USPS";
     }
     if(shippingCompany.includes('UPS')) {
-        return 'UPS';
+        return "UPS";
     }
     if(shippingCompany.includes('FedEx')) {
-        return 'FedEx';
+        return "FedEx";
     }
 }
