@@ -12,6 +12,6 @@ exports.getShippingId = function(shippingTitle) {
         return 113;
     }
     if(shippingTitle.includes('DHL')) {
-        return 138;
+        return 6;
     }
 }
