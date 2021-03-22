@@ -58,7 +58,7 @@ async function updateShopifyWithECNDataFeed() {
       var parser = new xmlParser.Parser();
       // let result;
       // fs.readFile(__dirname + '/test-small-batch.xml', function(err, data) {
-      sendXMLEmail(response.data);  
+      // sendXMLEmail(response.data);  
       parser.parseString(response.data, function (err, result) {
           initUpdate(result);
         });
