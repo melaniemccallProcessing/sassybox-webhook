@@ -379,6 +379,9 @@ async function createProduct(item) {
   if (item.description) {
     let product_tags = item.categories.concat(item.stock);
     product_tags.push('New');
+    if((product_tags.includes('Vibrators') && product_tags.includes('Remote Control')) || (product_tags.includes('Vibrators') && product_tags.includes('App Compatible')) ) {
+      product_tags.push('remote-vibrator');
+    }
     let newProductObj = {
       "product": {
         "title": item.alternateTitle == ' ' || item.alternateTitle == '' ? item.title : item.alternateTitle,
