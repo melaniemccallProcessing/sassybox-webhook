@@ -2,14 +2,14 @@ exports.getShippingId = function(shippingTitle) {
     if(shippingTitle.includes('Free Shipping') || shippingTitle.includes('Flat Rate')) {
         return 6;
     }
-    if(shippingTitle.includes('Priority Express')) {
-        return 102;
+    if(shippingTitle.includes('UPS 2nd Day')) {
+        return 112;
     }
-    if(shippingTitle.includes('Overnight')) {
+    if(shippingTitle.includes('UPS Ground')) {
+        return 114;
+    }
+    if(shippingTitle.includes('Next Day Air')) {
         return 109;
-    }
-    if(shippingTitle.includes('2-3 days')) {
-        return 113;
     }
     if(shippingTitle.includes('DHL')) {
         return 6;
