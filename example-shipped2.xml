@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<content>
+	<orders>
+		<order>
+			<orderid>999-555</orderid>
+			<clientid>9999</clientid>
+			<clientstoreid>999</clientstoreid>
+			<orderstatus>Shipped</orderstatus>
+			<orderpausestatus>None</orderpausestatus>
+			<orderactions>
+				<actionitem>
+					<orderactionid> </orderactionid>
+					<orderactiondescription> </orderactiondescription>
+				</actionitem>
+			</orderactions>
+			<refordernumber>ou812</refordernumber>
+			<genericshippingmethodid>6</genericshippingmethodid>
+			<orderdate>1/02/2009</orderdate>
+			<ordertime>03:31 PM</ordertime>
+			<shipments>
+				<shipment>
+					<shipmentid>66863</shipmentid>
+					<shipmentstatus>Shipped</shipmentstatus>
+					<shipmentcarrier>USPS Endicia</shipmentcarrier>
+					<shipmentmethod>Media Mail</shipmentmethod>
+					<shipmenttrackingnumber> </shipmenttrackingnumber>
+					<shipmentdate>09/09/2009</shipmentdate>
+					<shipmenttime>03:42:08:PM</shipmenttime>
+					<shipmentcharges>
+						<publishedrate>$2.57</publishedrate>
+					</shipmentcharges>
+					<shipmentpackages>
+						<shipmentpackagesitems>
+							<shipmentpackagetrackingnumber>
+								9102148008600230663610
+							</shipmentpackagetrackingnumber>
+							<shipmentpackageitemsku>
+								PPDVD612
+							</shipmentpackageitemsku>
+							<shipmentpackageitemquantity>
+								1
+							</shipmentpackageitemquantity>
+							<shipmentpackageitemid>
+								71397
+							</shipmentpackageitemid>
+							<shipmentpackagestatus>
+								Closed
+							</shipmentpackagestatus>
+							<shipmentpackageweight>0.5 </shipmentpackageweight>
+							<shipmentpackageid>206544</shipmentpackageid>
+						</shipmentpackagesitems>
+						<shipmentpackagesitems>
+							<shipmentpackagetrackingnumber>9102148008600230663610
+							</shipmentpackagetrackingnumber>
+							<shipmentpackageitemsku>
+								PHEDVD242
+							</shipmentpackageitemsku>
+							<shipmentpackageitemquantity>1</shipmentpackageitemquantity>
+							<shipmentpackageitemid>84840</shipmentpackageitemid>
+							<shipmentpackagestatus>closed</shipmentpackagestatus>
+							<shipmentpackageweight>0.5 </shipmentpackageweight>
+							<shipmentpackageid>206544</shipmentpackageid>
+						</shipmentpackagesitems>
+					</shipmentpackages>
+				</shipment>
+			</shipments>
+			<backordereditems>
+				<backorderitem>
+					<backordersku> </backordersku>
+					<backorderitemid> </backorderitemid>
+					<backorderquantity> </backorderquantity>
+				</backorderitem>
+			</backordereditems>
+			<lineitems>
+				<item>
+					<sku>PHEDVD242</sku>
+					<itemid>84840</itemid>
+					<supplier>IVD</supplier>
+					<itemstatus>Allocated</itemstatus>
+					<quantity>1</quantity>
+					<allocated>0</allocated>
+					<packaged>1</packaged>
+					<cancelled>0</cancelled>
+					<backordered>0</backordered>
+
+				</item>
+				<item>
+					<sku>PPDVD612</sku>
+					<itemid>71397</itemid>
+					<supplier>IVD</supplier>
+					<itemstatus>Allocated</itemstatus>
+					<quantity>1</quantity>
+					<allocated>0</allocated>
+					<packaged>1</packaged>
+					<cancelled>0</cancelled>
+					<backordered>0</backordered>
+				</item>
+				<item>
+					<sku>ARDVD89</sku>
+					<itemid>84870</itemid>
+					<supplier>IVD</supplier>
+					<itemstatus>Allocated</itemstatus>
+					<quantity>1</quantity>
+					<allocated>0</allocated>
+					<packaged>0</packaged>
+					<cancelled>1</cancelled>
+					<backordered>0</backordered>
+				</item>
+
+		</order>
+	</orders>
+</content>

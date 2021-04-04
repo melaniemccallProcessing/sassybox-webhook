@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<content>
+	<orders>
+		<order>
+			<orderid>999-555</orderid>					
+			<clientid>9999</clientid>
+			<clientstoreid>999</clientstoreid>				
+			<orderstatus>Canceled</orderstatus>
+			<orderpausestatus>None</orderpausestatus>
+			<orderactions>				
+				<actionitem>
+					<orderactionid> </orderactionid>
+					<orderactiondescription> </orderactiondescription>
+				</actionitem>					
+			</orderactions>
+			<refordernumber>ou812</refordernumber>
+			<genericshippingmethodid>6</genericshippingmethodid>
+			<orderdate>1/02/2009</orderdate>
+			<ordertime>03:31 PM</ordertime>
+			<shipments>								
+				<shipment>
+					<shipmentid> </shipmentid>
+					<shipmentstatus> </shipmentstatus>
+					<shipmentcarrier> </shipmentcarrier>
+					<shipmentmethod> </shipmentmethod>
+					<shipmenttrackingnumber> </shipmenttrackingnumber>
+					<shipmentdate> </shipmentdate>
+					<shipmenttime> </shipmenttime>		
+					<shipmentcharges>
+						<publishedrate> </publishedrate>
+					</shipmentcharges>
+					<shipmentpackages>		
+						<shipmentpackagesitems>
+<shipmentpackagetrackingnumber> </shipmentpackagetrackingnumber>
+<shipmentpackageitemquantity> </shipmentpackageitemquantity>
+<shipmentpackageitemid> </shipmentpackageitemid>
+<shipmentpackagestatus> </shipmentpackagestatus>
+<shipmentpackageweight> </shipmentpackageweight>			
+						</shipmentpackagesitems>	
+					</shipmentpackages>
+				</shipment>
+			</shipments>				
+			<backordereditems>
+				<backorderitem>
+					<backordersku> </backordersku>
+					<backorderitemid> </backorderitemid>
+					<backorderquantity> </backorderquantity>
+				</backorderitem>
+			</backordereditems>						
+			<lineitems>				
+				<item>
+					<sku>PHEDVD242</sku>
+					<itemid>84840</itemid>				
+					<supplier>IVD</supplier>
+					<itemstatus>Cancelled</itemstatus>
+<quantity>1</quantity> 
+ <allocated>0</allocated> 
+ <packaged>0</packaged> 
+ <cancelled>1</cancelled> 
+ <backordered>0</backordered>
+					</item>				
+			</lineitems>
+		</order>
+	</orders>
