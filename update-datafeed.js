@@ -366,6 +366,7 @@ function isBadProduct(product_sku) {
 
 async function createProduct(item) {
   let productImages = [];
+  let isAnyImageAvailable = item.image1 || item.image2;
   if (item.image1) {
     productImages.push({
       "src": item.image1
@@ -406,7 +407,7 @@ async function createProduct(item) {
 
         }],
         "images": productImages,
-        "published": item.stock == 'Available Now' ? true : false
+        "published": item.stock == 'Available Now' && isAnyImageAvailable ? true : false
       }
     }
     // console.log(newProductObj);
