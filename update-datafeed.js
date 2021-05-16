@@ -367,6 +367,8 @@ function isBadProduct(product_sku) {
 async function createProduct(item) {
   let productImages = [];
   let isAnyImageAvailable = item.image1 || item.image2;
+  let isThereADescription = item.description;
+  let unpublishable = !isAnyImageAvailable || !isThereADescription;
   if (item.image1) {
     productImages.push({
       "src": item.image1
@@ -377,8 +379,14 @@ async function createProduct(item) {
       "src": item.image2
     })
   }
-  if (item.description) {
+  // if (item.description) {
     let product_tags = item.categories.concat(item.stock);
+    if(!isAnyImageAvailable) {
+      product_tags.push('No Image')
+    }
+    if(!isThereADescription) {
+      product_tags.push('No Description')
+    }
     product_tags.push('New');
     if((product_tags.includes('Vibrators') && product_tags.includes('Remote Control')) || (product_tags.includes('Vibrators') && product_tags.includes('App Compatible')) ) {
       product_tags.push('remote-vibrator');
@@ -407,7 +415,7 @@ async function createProduct(item) {
 
         }],
         "images": productImages,
-        "published": item.stock == 'Available Now' && isAnyImageAvailable ? true : false
+        "published": item.stock == 'Available Now' && !unpublishable ? true : false
       }
     }
     // console.log(newProductObj);
@@ -417,9 +425,9 @@ async function createProduct(item) {
       data: newProductObj
     }); 
     //tag with- grammarCheck
-  } else {
-    console.log("no item description for-- " + item.title + " not making this");
-  }
+  // } else {
+    // console.log("no item description for-- " + item.title + " not making this");
+  // }
 }
 
 function sendEmail(updatedItems,newItems,deletedItems) {
