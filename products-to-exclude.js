@@ -1,5 +1,10 @@
 
-let productsToExclude = ['AT1010',
+let productsToExclude = [
+'DJ-1361-22-3',
+'DJ-1361-21-3',
+'DJ-1361-20-3',
+'DJ-1361-23-3',
+'AT1010',
 'XR-AB120',
 'XR-VF551',
 'XR-AF565',
