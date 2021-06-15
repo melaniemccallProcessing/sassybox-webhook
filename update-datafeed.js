@@ -229,7 +229,7 @@ async function updateProductsAvailability(itemsToUpdate) {
                 "product": {
                   "id": product_id_withoutprefix,
                   "tags": tags,
-                  "published": itemsWithProductIds[i].stock == 'Available Now' ? true : false
+                  "published": true
                 }
               }
               // console.log(`this product${itemsWithProductIds[i].title} is active, but its stock status is ${itemsWithProductIds[i].stock}`);
