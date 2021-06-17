@@ -1,3 +1,4 @@
+//Example of a change
 const axios = require('axios');
 var xmlParser = require('xml2js');
 var fs = require('fs');
@@ -251,7 +252,7 @@ async function updateProductsAvailability(itemsToUpdate) {
 
       } else { //Create product that doesn't exist
         let productTitle = itemsWithProductIds[i].alternateTitle == ' ' || itemsWithProductIds[i].alternateTitle == '' ? itemsWithProductIds[i].title : itemsWithProductIds[i].alternateTitle;
-        if (!itemsWithProductIds[i].categories.includes('Closeout/discontinued') || !itemsWithProductIds[i].categories.includes('Displays') && !itemsWithProductIds[i].categories.includes('Condom Bowls') && !itemsWithProductIds[i].categories.includes('Tester') && !itemsWithProductIds[i].categories.includes('Fishbowl') && !itemsWithProductIds[i].categories.includes('Cbd') && !productTitle.includes('Hemp') && !isBadVendor(itemsWithProductIds[i].vendor) && !isBadProduct(itemsWithProductIds[i].sku) && !productTitle.includes('bowl') && !productTitle.includes('Bowl') && !productTitle.includes('Display') && !productTitle.includes('Case') && !productTitle.includes('CD') && !productTitle.includes('disc')) {
+        if (!itemsWithProductIds[i].categories.includes('Closeout/discontinued') && !itemsWithProductIds[i].categories.includes('Displays') && !itemsWithProductIds[i].categories.includes('Condom Bowls') && !itemsWithProductIds[i].categories.includes('Tester') && !itemsWithProductIds[i].categories.includes('Fishbowl') && !itemsWithProductIds[i].categories.includes('Cbd') && !productTitle.includes('Hemp') && !isBadVendor(itemsWithProductIds[i].vendor) && !isBadProduct(itemsWithProductIds[i].sku) && !productTitle.includes('bowl') && !productTitle.includes('Bowl') && !productTitle.includes('Display') && !productTitle.includes('Case') && !productTitle.includes('CD') && !productTitle.includes('disc')) {
           await createProduct(itemsWithProductIds[i]).then(response => {
             console.log(`Product created successfully--> ${response.data.product.title}`);
             newItems.push(response.data.product.title);
