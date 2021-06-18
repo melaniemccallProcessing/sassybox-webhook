@@ -60,7 +60,7 @@ async function updateShopifyWithECNDataFeed() {
       var parser = new xmlParser.Parser();
       // let result;
       // fs.readFile(__dirname + '/test-small-batch.xml', function(err, data) {
-      // sendXMLEmail(response.data);  
+      // sendXMLEmail(response.data);
       parser.parseString(response.data, function (err, result) {
           initUpdate(result);
         });
@@ -197,7 +197,8 @@ async function updateProductsAvailability(itemsToUpdate) {
         await getProductInfo(itemsWithProductIds[i].product_id).then(result => {
           // console.log(result.data);
           let productinShopify = result.data.data.product;
-
+          let inventoryId = productinShopify.variants.edges[0].node.inventoryItem.id;
+          let inventoryIdWithoutPrefix = inventoryId.replace("gid://shopify/InventoryItem/", "");
           if (productinShopify.tags.includes(itemsWithProductIds[i].stock)) {
             console.log(`no changes here for ${itemsWithProductIds[i].title}, product status is the same`);
             // let tags = productinShopify.tags.filter(tag => tag !== 'Available Now' && tag !== 'Short Wait' && tag !== 'Call your Rep for Availability' && tag !== 'Not Available' && tag !== 'Long Wait');
@@ -218,10 +219,11 @@ async function updateProductsAvailability(itemsToUpdate) {
             //   }).catch(err=> {
             //       // console.log(err);
             //       console.log('ERROR UPDATING NEW CATEGORIES for product-->'+ productinShopify.title + ' ' + err)
-            //   });  
+            //   });
           } else { //stock statuses are not the same
             // console.log(`Retrieved status from ECN for ${itemsWithProductIds[i].title} : ${itemsWithProductIds[i].stock} --> Shopifys status ${productinShopify.publishedAt},Shopifys tags ${productinShopify.tags}`)
-              let tags = productinShopify.tags.filter(tag => tag !== 'Available Now' && tag !== 'Short Wait' && tag !== 'Call your Rep for Availability' && tag !== 'Not Available' && tag !== 'Long Wait');
+
+            let tags = productinShopify.tags.filter(tag => tag !== 'Available Now' && tag !== 'Short Wait' && tag !== 'Call your Rep for Availability' && tag !== 'Not Available' && tag !== 'Long Wait');
               tags.push(itemsWithProductIds[i].stock);
               tags = tags.concat(itemsWithProductIds[i].categories);
               tags = filterUnwantedProductsFromCategories(tags, itemsWithProductIds[i].sku);
@@ -234,21 +236,34 @@ async function updateProductsAvailability(itemsToUpdate) {
                   "published": true
                 }
               }
+              let inventoryUpdate = {
+                "location_id": 31145721923,
+                "inventory_item_id": inventoryIdWithoutPrefix,
+                "available": itemsWithProductIds[i].stock == 'Available Now' ? 30 : 0
+              };
               // console.log(`this product${itemsWithProductIds[i].title} is active, but its stock status is ${itemsWithProductIds[i].stock}`);
               makeProductUpdate(productUpdate).then(response => {
                 // console.log(response);
-                console.log(`product updated successfully-->${response.data.product.title}`);
+                console.log(`product status updated successfully-->${response.data.product.title}`);
+                updateProductInventory(inventoryUpdate).then(response => {
+                  // console.log(response.data);
+                  console.log(`product inventory updated successfully-->${productinShopify.title}`);
+
+                }).catch(err => {
+                  // console.log(err);
+                  console.log('ERROR UPDATING PRODUCT INVENTORY-->' + productinShopify.title + ' ' + err);
+                });
                 updatedItems.push({name:response.data.product.title, status:itemsWithProductIds[i].stock});
                 // console.log(response.data);
               }).catch(err => {
                 // console.log(err);
                 console.log('ERROR UPDATING PRODUCT-->' + productinShopify.title + ' ' + err);
               });
-            
+
           }
 
         }).catch(err => {
-          console.log('ERROR GETTING PRODUCT INFO' + err.data);
+          console.log('ERROR GETTING PRODUCT INFO ' + err);
         })
 
       } else { //Create product that doesn't exist
@@ -308,6 +323,13 @@ function makeProductUpdate(obj) {
     data: obj
   })
 }
+function updateProductInventory(obj) {
+  return axios({
+    url: 'https://febe69a891c04a2e134443805cdcd304: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@try-sassy-box.myshopify.com/admin/api/2021-04/inventory_levels/set.json/',
+    method: 'post',
+    data: obj
+  })
+}
 async function getProductId(item) {
   const endpoint = 'https://try-sassy-box.myshopify.com/admin/api/2020-10/graphql.json'
   return axios({
@@ -349,12 +371,23 @@ async function getProductInfo(product_id) {
                   title
                   tags
                   publishedAt
+                  variants(first:1) {
+                    edges {
+                      node {
+                        id
+                        inventoryItem {
+                          id
+                        }
+                      }
+                    }
+                  }
                 }
               }
             `
     }
   });
 }
+
 
 function isBadVendor(vendor) {
   let mapArray = ["Shane's World","Hott Products",'Screaming O','Golden Triangle','Adventure Industries, Llc','Bellesa Enterprises Inc','Betru Wellness','Channel 1 Releasing','Cyrex Ltd','East Coast New Nj','Even Technology Co Limited','Flawless 5 Health','Global Protection Corp','Hemp Bomb','Issawrap Inc/p.s. Condoms','Lix Tongue Vibes','Nori Fields Llc','Ohmibod','Old Man China Brush','Phe','Random House, Inc','Rapture Novelties','Rejuviel','Rock Candy Toys','Signs of Life Inc.','Solevy Co','Streem Master','Stud 100', 'Ticklekitty Press', 'Tongue Joy', 'Zero Tolerance', 'Gnarly Ride Inc', 'Little Genie', 'Little Genie Productions Llc.', 'Bijoux Indiscrets', 'Wallace - O Farrell,inc.', 'Icon Brands Inc', 'Abs Holdings', 'Agb Dba Spartacus Enterprises', 'Ball & Chain', 'Ball and Chain', 'Body Action', 'Creative Conceptionsl Llc', 'Dona', 'Emotion Lotion', 'Hustler', 'Id Lubes', 'Joydivision Llc', 'Kingman Industries, Inc', 'Ky','Me','New Concepts - Deeva','Ozze Creations', 'Private Label Productions Llc', 'TP3 LLC', 'Thredly.com', 'Wet Lubes', 'Cousins Group Inc', 'Paradise Marketing Services Pm', 'Carrashield Labs dba Devine 9', 'Novelties By Nass-walk Inc','Tantus, Inc','Topco Sales','Lovehoney, Llc','Adam & Eve','Adam and Eve','Bedroom Products Llc','Evolved Novelties','Fredericks Of Hollywood','Savvy Co Llc','Baci Lingerie','Barely Bare','Leg Avenue Inc.','Prowler','Secrets', 'CB-6000', 'Pink/gun Oil', 'Fuck Sauce','Rocks Off Ltd Usa','Arcwave','', ' ', 'Big Teaze Toys','Kangaroo','South Gator Oils','B.m.s. Enterprises','Fleshlight','Hitachi Majic','Jimmy Jane - Jj Acquisition Llc','Lelo','Novel Creations Usa Inc','Pjur','Rabbit Co.','Emojibator','Perfect Fit Brand Inc.','Pixelrise Llc','Shots America Llc','Ananda Health','East Coast News Nj','Bijoux Indiscets, Sl','Celebrity Knights Llp','Concepts Of Love Rianne S','Hunkyjunk','Ovo','Signs Of Life Inc.','Vedo Toys','Aneros','Bodywand','Rascal Toys','Kiiroo Bv','B. Cumming Company, Inc.','Hitachi Majic Wand','Mimic','New Earth Trading','Novel Creations Usa Inc','Shots America LLC','West Market','Zumio Inc','Lux Fetish','Kama Sutra Company','B.m.s Enterprises', 'Whip Smart', 'Medina Inc','Venwel Logistics Inc.'];
@@ -404,7 +437,7 @@ async function createProduct(item) {
           "title": "Default Title",
           "price": item.price * 2,
           "sku": item.sku,
-          "inventory_policy": "continue",
+          "inventory_policy": "deny",
           "fulfillment_service": "manual",
           "inventory_management": "shopify",
           "taxable": true,
@@ -412,12 +445,12 @@ async function createProduct(item) {
           "grams": 0,
           "weight": 0,
           "weight_unit": "lb",
-          "inventory_quantity": 0,
+          "inventory_quantity": item.stock == 'Available Now' ? 30 : 0,
           "requires_shipping": true,
 
         }],
         "images": productImages,
-        "published": item.stock == 'Available Now' && !unpublishable ? true : false
+        "published": unpublishable ? false : true
       }
     }
     // console.log(newProductObj);
@@ -425,7 +458,7 @@ async function createProduct(item) {
       url: 'https://febe69a891c04a2e134443805cdcd304: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@try-sassy-box.myshopify.com/admin/api/2020-10/products.json',
       method: 'post',
       data: newProductObj
-    }); 
+    });
     //tag with- grammarCheck
   // } else {
     // console.log("no item description for-- " + item.title + " not making this");
@@ -466,7 +499,7 @@ function sendEmail(updatedItems,newItems,deletedItems) {
       console.log('Update email sent: ' + info.response);
     }
   });
-  
+
 }
 function sendErrEmail(error) {
   mailOptions.html = 'Error Getting Datafeed <br>' + error;
@@ -477,7 +510,7 @@ function sendErrEmail(error) {
       console.log('Update email sent: ' + info.response);
     }
   });
-  
+
 }
 function sendXMLEmail(xml) {
   xmlMailOptions.text = xml;
@@ -555,7 +588,7 @@ function filterUnwantedProductsFromCategories(tags, sku) {
     console.log('Removing tag--Massage Oils from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Massage Oils');
   }
-  
+
   if (categoriesToReturn.includes('Lubricants') && isBadLubricant(sku)){
     console.log('Removing tag--Lubricants from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Lubricants');
