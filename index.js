@@ -18,7 +18,7 @@ var transporter = nodemailer.createTransport({
       pass: 'Mary_jewel23'
     }
   });
-  
+
 var errorMailOptions = {
     from: {
         name: 'SassyBox Shop',
@@ -58,7 +58,7 @@ app.post('/order', async (req, res) => {
     const order = JSON.parse(body.toString())
     // console.log(order);
     placeOrderToECN(order);
-    
+
 
   } else {
     // No match! This request didn't originate from Shopify
@@ -114,18 +114,18 @@ async function placeOrderToECN(order) {
                 <invoiceheaderbase64></invoiceheaderbase64>
                 <fillstatusid>4</fillstatusid>
                 <packingincludesid>1</packingincludesid>
-                <orderpauselevelid></orderpauselevelid>			
+                <orderpauselevelid></orderpauselevelid>
                 <invoicefootertext></invoicefootertext>
                 <signatureconfirmationid>0</signatureconfirmationid>
                 <insuranceid></insuranceid>
-                <saturdaydeliveryid></saturdaydeliveryid>
+                <saturdaydeliveryid>1</saturdaydeliveryid>
             </orderheader>
             <lineitems>`
             ;
     // let itemsPromise = new Promise((resolve, reject) => {
         //products that aren't from route app
-    let itemsToOrder = order.line_items.filter((item)=> {return item.title != 'Route Package Protection'});            
-    console.log(itemsToOrder);    
+    let itemsToOrder = order.line_items.filter((item)=> {return item.title != 'Route Package Protection'});
+    console.log(itemsToOrder);
     for(let index = 0; index < itemsToOrder.length; index++) {
                 console.log(index);
 
@@ -154,7 +154,7 @@ async function placeOrderToECN(order) {
         </orders>`;
         attemptedXML += xmlStr;
         let order_url = 'http://adultshipper.com/back/processxmlorder2.cfm?passkey=7951D77D8D073EFC27A6138CCBC9FC4C&clientID=6678&storeid=791';
-        console.log(xmlStr); 
+        console.log(xmlStr);
         var options = {
             'method': 'POST',
             'url': order_url,
@@ -175,7 +175,7 @@ async function placeOrderToECN(order) {
                 if(err){console.log(err)}
                 let ecnOrderId = result['content']['orders'][0]['order'][0]['orderid'][0];
                 let rejectedOrderReason = result.content.rejectedorders[0]['ro_order'][0].ro_rejectedreason[0];
-                let rejectedItems = []; 
+                let rejectedItems = [];
                 let itemsNotFound = result.content.itemsnotfound[0]['inf_item'];
                 itemsNotFound.forEach(item => {
                     let rejectedItem = {};
@@ -204,7 +204,7 @@ async function placeOrderToECN(order) {
                             mailText += 'Item SKU: ' + item.sku + '\n';
                             mailText += 'Reason: ' + item.reason + '\n\n';
                         });
-                          
+
                    }
                    errorMailOptions.text = mailText;
                    errorMailOptions.text += '\n\nAttempted XML: \n\n' + attemptedXML;
@@ -244,7 +244,7 @@ async function placeOrderToECN(order) {
                         console.log(error);
                     });
                }
-                
+
             })
         });
 
