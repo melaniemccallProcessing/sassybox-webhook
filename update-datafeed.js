@@ -149,8 +149,8 @@ function parseXML(itemsToLoop, action) {
         item.vendor = itemsToLoop[i]['manufacturer'][0];
         item.description = itemsToLoop[i]['itemDescription'][0];
         item.barcode = itemsToLoop[i]['upc'][0];
-        item.image1 = 'https://s3.amazonaws.com/ecn-watermarks/effex/' + itemsToLoop[i]['itemID'][0] + '_2.jpg';
-        item.image2 = 'https://s3.amazonaws.com/ecn-watermarks/effex/' + itemsToLoop[i]['itemID'][0] + '_1.jpg';
+        item.image1 = itemsToLoop[i]['imageLargeFront'][0];
+        item.image2 = itemsToLoop[i]['imageLargeBack'][0];
         let mastercategories = itemsToLoop[i].categoriesV2[0].categoritem[0].mastercategories[0].split("|");
         let subcategories = itemsToLoop[i].categoriesV2[0].categoritem[0].subcategories[0].split("|");
         let combined_categories = mastercategories.concat(subcategories);
