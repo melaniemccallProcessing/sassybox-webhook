@@ -16,6 +16,7 @@ let grabAuthorizedOrdersUrl = 'https://febe69a891c04a2e134443805cdcd304:shppa_d2
 // let grabAuthorizedOrdersUrl = 'https://febe69a891c04a2e134443805cdcd304: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@try-sassy-box.myshopify.com/admin/api/2020-10/orders.json?ids=3829141241909';
 
 var parser = new xmlParser.Parser();
+var updateEmail = '';
 
 // fs.readFile(__dirname + '/example-shipped.xml', function(err, data) {
     // console.log(data);
@@ -119,11 +120,15 @@ async function processOrders(ordersToCheck) {
                     } else {
                         console.log('this is a partial order');
                         console.log(financial_status);
+                        updateEmail += 'Order # '+ ordersToCheck[i].id + ' is a partial order\n ECN ID: ' +orderId + '\nOrder was not fulfilled. Please run the order manually and monitor, this function still needs some more testing to run on its own. Contact Melanie;)';
+                        sendStatusEmailToSassyBox();
                         // processPartialOrder(cancelledItems,ordersToCheck[i],trackingInfo, financial_status);
                     }
                 } else if (order_status == 'Canceled') {
                     let lineItems = result.content.orders[0].order[0].lineitems[0].item;
                     // processCancelledOrder(ordersToCheck[i],lineItems);
+                    updateEmail += 'Order # '+ ordersToCheck[i].id + ' is a fully cancelled order\n ECN ID: ' +orderId + '\nOrder was not fulfilled. Please run the order manually and monitor, this function still needs some more testing to run on its own. Contact Melanie;)';
+                    sendStatusEmailToSassyBox();
                     //nothing shipped
                     //send email to customer
                 }
@@ -146,7 +151,7 @@ function processCancelledOrder(orderObj, cancelledItems) {
 
 function processFullOrder(orderObj,trackingInfo) {
     let shopifyOrderId = orderObj.id;
-
+    updateEmail += 'Order # '+ shopifyOrderId;
     let total_price = orderObj.current_total_price ? orderObj.current_total_price : orderObj.total_price;
     console.log(total_price);
     let financial_status = orderObj.financial_status;
@@ -289,8 +294,12 @@ async function fulfillOrder(order_id, shippingCompany, trackingNum) {
     console.log(fulfillmentURL);
     axios.post(fulfillmentURL, fulfillmentObj).then(function(){
         console.log('order has been fulfilled.. customer has been notified');
+        updateEmail += 'Order has been fulfilled';
+        sendStatusEmailToSassyBox();
     }).catch(function(err){
         console.log('error sending order fulfillment!' + err);
+        updateEmail += 'There was an error fulfilling this order. Please reach out to Melanie.';
+        sendStatusEmailToSassyBox();
         // error email here
     });
 }
@@ -431,4 +440,26 @@ function determineShippingCompany(shippingCompany) {
     if(shippingCompany.includes('FedEx')) {
         return "FedEx";
     }
+}
+
+function sendStatusEmailToSassyBox(){
+    let html = updateEmail ? updateEmail : 'no updates have been detected' ;
+    let mailOptions = {
+        from: {
+            name: 'Sassy Box',
+            address: 'sassybox-dev@outlook.com'
+        },
+        // to: 'bluescript17@gmail.com',
+        to: 'sassybox-dev@outlook.com',
+        bcc: 'bluescript17@gmail.com',
+        subject: 'Order Update Status',
+        html: html
+    };
+    transporter.sendMail(mailOptions, function(err, info){
+        if (err) {
+          console.log('error sending update email' + err);
+        } else {
+          console.log('Update email sent! ');
+        }
+    });
 }
