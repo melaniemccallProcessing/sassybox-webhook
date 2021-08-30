@@ -121,14 +121,14 @@ async function processOrders(ordersToCheck) {
                     } else {
                         console.log('this is a partial order');
                         console.log(financial_status);
-                        updateEmail += 'Order # '+ ordersToCheck[i].id + ' is a partial order\n ECN ID: ' +orderId + '\nOrder was not fulfilled. Please run the order manually and monitor, this function still needs some more testing to run on its own. Contact Melanie;)';
+                        updateEmail += 'Order # '+ ordersToCheck[i].order_number + ' is a partial order\n ECN ID: ' +orderId + '\nOrder was not fulfilled. Please run the order manually and monitor, this function still needs some more testing to run on its own. Contact Melanie;)';
                         sendStatusEmailToSassyBox();
                         // processPartialOrder(cancelledItems,ordersToCheck[i],trackingInfo, financial_status);
                     }
                 } else if (order_status == 'Canceled') {
                     let lineItems = result.content.orders[0].order[0].lineitems[0].item;
                     // processCancelledOrder(ordersToCheck[i],lineItems);
-                    updateEmail += 'Order # '+ ordersToCheck[i].id + ' is a fully cancelled order\n ECN ID: ' +orderId + '\nOrder was not fulfilled. Please run the order manually and monitor, this function still needs some more testing to run on its own. Contact Melanie;)';
+                    updateEmail += 'Order # '+ ordersToCheck[i].order_number + ' is a fully cancelled order\n ECN ID: ' +orderId + '\nOrder was not fulfilled. Please run the order manually and monitor, this function still needs some more testing to run on its own. Contact Melanie;)';
                     sendStatusEmailToSassyBox();
                     //nothing shipped
                     //send email to customer
