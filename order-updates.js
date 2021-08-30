@@ -152,7 +152,7 @@ function processCancelledOrder(orderObj, cancelledItems) {
 
 function processFullOrder(orderObj,trackingInfo) {
     let shopifyOrderId = orderObj.id;
-    updateEmail += 'Order # '+ shopifyOrderId;
+    updateEmail += 'Order # '+ orderObj.order_number;
     let total_price = orderObj.current_total_price ? orderObj.current_total_price : orderObj.total_price;
     console.log(total_price);
     let financial_status = orderObj.financial_status;
