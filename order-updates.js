@@ -12,7 +12,7 @@ var transporter = nodemailer.createTransport({
     }
   });
 
-let grabAuthorizedOrdersUrl = 'https://febe69a891c04a2e134443805cdcd304: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@try-sassy-box.myshopify.com/admin/api/2020-10/orders.json?fulfillment_status=unfulfilled';
+let grabAuthorizedOrdersUrl = 'https://febe69a891c04a2e134443805cdcd304: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@try-sassy-box.myshopify.com/admin/api/2020-10/orders.json?fulfillment_status=unfulfilled&status=open';
 // let grabAuthorizedOrdersUrl = 'https://febe69a891c04a2e134443805cdcd304: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@try-sassy-box.myshopify.com/admin/api/2020-10/orders.json?ids=3829141241909';
 
 var parser = new xmlParser.Parser();
@@ -55,6 +55,7 @@ var updateEmail = '';
      let ordersFromShopify = response.data.orders;
      if(!ordersFromShopify.length) {
          console.log("No new orders to parse");
+         sendStatusEmailToSassyBox();
          return;
      }
      for(let i = 0; i < ordersFromShopify.length; i++) {
