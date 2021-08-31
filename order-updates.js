@@ -55,7 +55,7 @@ var updateEmail = '';
      let ordersFromShopify = response.data.orders;
      if(!ordersFromShopify.length) {
          console.log("No new orders to parse");
-         sendStatusEmailToSassyBox();
+        //  sendStatusEmailToSassyBox();
          return;
      }
      for(let i = 0; i < ordersFromShopify.length; i++) {
@@ -139,20 +139,28 @@ async function processOrders(ordersToCheck) {
     }
 }
 function processCancelledOrder(orderObj, cancelledItems) {
-    sendCustomerEmailAboutPartialOrder(orderObj,cancelledItems);
-    //DONT CANCEL ORDER, JUST ARCHIVE
-    let cancelOrderUrl = 'https://febe69a891c04a2e134443805cdcd304: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@try-sassy-box.myshopify.com/admin/api/2020-10/orders/' + orderObj.id + '/cancel.json';
-    axios.post(cancelOrderUrl).then(function() {
-        console.log('order cancelled successfully');
-        //email here
-    }).catch((err)=>{
-        //error email here
-    })
+    // sendCustomerEmailAboutPartialOrder(orderObj,cancelledItems);
+    // let cancelOrderObj = {
+
+    //     "email": true,
+    //     "reason": "inventory"
+    // }
+    // console.log(orderObj);
+    // refundPartialAmount(orderObj, cancelledItems);
+    // Cancel API is not working, needs testing
+
+    // let cancelOrderUrl = 'https://febe69a891c04a2e134443805cdcd304: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@try-sassy-box.myshopify.com/admin/api/2020-10/orders/' + orderObj.id + '/cancel.json';
+    // axios.post(cancelOrderUrl).then(function() {
+    //     console.log('order cancelled successfully');
+    //     //email here
+    // }).catch((err)=>{
+    //     //error email here
+    // })
 }
 
 function processFullOrder(orderObj,trackingInfo) {
     let shopifyOrderId = orderObj.id;
-    updateEmail += 'Order # '+ orderObj.order_number;
+    updateEmail += 'Order # '+ orderObj.order_number + '\n';
     let total_price = orderObj.current_total_price ? orderObj.current_total_price : orderObj.total_price;
     console.log(total_price);
     let financial_status = orderObj.financial_status;
