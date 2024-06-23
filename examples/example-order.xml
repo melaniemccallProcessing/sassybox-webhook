@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<orders>
+	<order>
+		<orderheader>
+			<refordernumber>2052</refordernumber>
+			<ordertotal>92.98</ordertotal>
+			<clientid>6678</clientid>
+			<clientstoreid>791</clientstoreid>
+			<firstname>William</firstname>
+			<lastname>Norman</lastname>
+			<email>williamnpitts@yahoo.com</email>
+			<phone1>18646211375</phone1>
+			<phone2></phone2>
+			<phone3></phone3>
+			<shiptoaddress1>201 East Blackstock Road</shiptoaddress1>
+			<shiptoaddress2>Apt. K74</shiptoaddress2>
+			<shiptocity>Spartanburg</shiptocity>
+			<shiptostate>SC</shiptostate>
+			<shiptozip>29301</shiptozip>
+			<shiptocountry>US</shiptocountry>
+			<genericshippingmethodid>6</genericshippingmethodid>
+			<invoiceheaderbase64></invoiceheaderbase64>
+			<fillstatusid>4</fillstatusid>
+			<packingincludesid>1</packingincludesid>
+			<orderpauselevelid></orderpauselevelid>
+            <invoicefootertext></invoicefootertext>
+			<signatureconfirmationid></signatureconfirmationid>
+            <insuranceid></insuranceid>
+            <saturdaydeliveryid>1</saturdaydeliveryid>
+		</orderheader>
+		<lineitems>
+			<item>
+				<itemSKU>BL-06201</itemSKU>
+				<itemid>58501</itemid>
+				<quantity>1</quantity>
+                <price>79.99</price>
+			</item>
+			</lineitems>
+	</order>
+</orders>

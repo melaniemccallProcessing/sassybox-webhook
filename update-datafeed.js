@@ -1,5 +1,4 @@
-//Example of a change
-//Another change here
+
 const axios = require('axios');
 var xmlParser = require('xml2js');
 var fs = require('fs');
@@ -58,13 +57,10 @@ async function updateShopifyWithECNDataFeed() {
     .then(response => {
       // await parseXML
       var parser = new xmlParser.Parser();
-      // let result;
-      // fs.readFile(__dirname + '/test-small-batch.xml', function(err, data) {
-      // sendXMLEmail(response.data);
       parser.parseString(response.data, function (err, result) {
           initUpdate(result);
         });
-      // });
+
     })
     .catch(response => {
       console.log('Error grabbing the latest' + response);
@@ -97,6 +93,7 @@ async function initUpdate(result) {
   let allItemsToParse = itemsToUpdate.concat(itemsToDelete);
   console.log('Total items to parse: ' + allItemsToParse.length);
 
+  //parsing arrays
   let chunkedArraysToParse = chunk(allItemsToParse, 200);
   console.log('Total chunks: ' + chunkedArraysToParse.length);
   // console.log('waiting for items to parse...');
