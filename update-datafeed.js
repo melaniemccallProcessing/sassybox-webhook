@@ -1,47 +1,75 @@
-
 const axios = require('axios');
 var xmlParser = require('xml2js');
-var fs = require('fs');
 var nodemailer = require('nodemailer');
 var exclusion_list = require('./products-to-exclude');
 
-const {
-  triggerAsyncId
-} = require('async_hooks');
-const {
-  create
-} = require('domain');
-// import { GraphQLClient, gql } from 'graphql-request'
 
-var transporter = nodemailer.createTransport({
-  service: 'outlook',
+// Shopify Admin API
+const SHOPIFY_API_KEY = process.env.SHOPIFY_API_KEY;
+const SHOPIFY_API_PASSWORD = process.env.SHOPIFY_API_PASSWORD;
+const SHOPIFY_SHOP_DOMAIN = process.env.SHOPIFY_SHOP_DOMAIN; // e.g. "your-store.myshopify.com"
+const SHOPIFY_API_VERSION = process.env.SHOPIFY_API_VERSION || '2020-10';
+const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN;
+
+// ECN / dropshipper configuration
+const ECN_CLIENT_ID = process.env.ECN_CLIENT_ID || '6678';
+const ECN_STORE_ID = process.env.ECN_STORE_ID || '791';
+const ECN_PASSKEY = process.env.ECN_PASSKEY;
+const ECN_BASE_URL = process.env.ECN_BASE_URL || 'http://adultshipper.com/back';
+const ECN_FEED_SITE_ID = process.env.ECN_FEED_SITE_ID || '508';
+const ECN_FEED_READ_URL =
+  `${ECN_BASE_URL.replace(/\/$/, '')}/ecnFeed.cfm?act=read&siteID=${ECN_FEED_SITE_ID}&passKey=${ECN_PASSKEY}`;
+const ECN_FEED_UPDATE_URL =
+  `${ECN_BASE_URL.replace(/\/$/, '')}/ecnFeed.cfm?act=update&siteID=${ECN_FEED_SITE_ID}&passKey=${ECN_PASSKEY}`;
+
+//Mail Configuration
+
+const EMAIL_SERVICE = process.env.MAIL_SMTP_SERVICE || 'outlook';
+const EMAIL_USER = process.env.MAIL_SMTP_USER;
+const EMAIL_PASS = process.env.MAIL_SMTP_PASS;
+
+if (!EMAIL_USER || !EMAIL_PASS) {
+  console.warn('⚠️ Email credentials are not fully configured (MAIL_SMTP_USER / MAIL_SMTP_PASS).');
+}
+
+
+const transporter = nodemailer.createTransport({
+  service: EMAIL_SERVICE,
   auth: {
-    user: 'sassybox-dev@outlook.com',
-    pass: 'ReadyToLaunch2020'
+    user: EMAIL_USER,
+    pass: EMAIL_PASS
   }
 });
 
-let todaysDate = new Date(Date.now());
-var mailOptions = {
-  from: {
+function shopifyRestUrl(pathWithQuery) {
+  return (
+    'https://' +
+    SHOPIFY_API_KEY + ':' +
+    SHOPIFY_API_PASSWORD + '@' +
+    SHOPIFY_SHOP_DOMAIN +
+    '/admin/api/' + SHOPIFY_API_VERSION +
+    pathWithQuery
+  );
+}
+
+function shopifyGraphQLEndpoint() {
+  return `https://${SHOPIFY_SHOP_DOMAIN}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`;
+}
+
+function createMailOptions(subject, html) {
+  return {
+    from: {
       name: 'SassyBox Shop',
-      address: 'sassybox-dev@outlook.com'
-  },
-  to: 'sassybox-dev@outlook.com',
-  replyTo: 'contact@sassyboxshop.com',
-  subject: 'DataFeed Update',
-  html: ''
+      address: process.env.MAIL_FROM_ADDRESS
+    },
+    to: process.env.MAIL_TO_ADDRESS,
+    replyTo: process.env.MAIL_REPLY_TO_ADDRESS,
+    subject,
+    html
+  }
 };
-var xmlMailOptions = {
-  from: {
-      name: 'SassyBox Shop',
-      address: 'sassybox-dev@outlook.com'
-  },
-  to: 'sassybox-dev@outlook.com',
-  replyTo: 'contact@sassyboxshop.com',
-  subject: 'DataFeed XML',
-  text: ''
-};
+
+
 let updatedItems = [];
 let newItems = [];
 let deletedItems = [];
@@ -50,24 +78,23 @@ updateShopifyWithECNDataFeed();
 
 
 async function updateShopifyWithECNDataFeed() {
-  let grabDataFeedUrl = 'http://feed.adultdropshipper.com/ecnFeed.cfm?act=read&siteID=508&passKey=2A62698BC5DC612F3A8E1AEC93C718BD'
-
-
-  axios.get(grabDataFeedUrl)
-    .then(response => {
-      // await parseXML
-      var parser = new xmlParser.Parser();
-      parser.parseString(response.data, function (err, result) {
-          initUpdate(result);
-        });
-
-    })
-    .catch(response => {
-      console.log('Error grabbing the latest' + response);
-      sendErrEmail(response);
-    })
-
+  try {
+    const response = await axios.get(ECN_FEED_READ_URL);
+    const parser = new xmlParser.Parser();
+    parser.parseString(response.data, function (err, result) {
+      if (err) {
+        console.log('Error parsing ECN datafeed XML', err);
+        sendErrEmail(err);
+        return;
+      }
+      initUpdate(result);
+    });
+  } catch (err) {
+    console.log('Error grabbing the latest', err);
+    sendErrEmail(err);
+  }
 }
+
 
 async function initUpdate(result) {
   let modifyItems = result.content.modify[0].item ? result.content.modify[0].item : [];
@@ -103,7 +130,7 @@ async function initUpdate(result) {
     await updateProductsAvailability(chunkedArraysToParse[i]);
   }
   timeCommit();
-  sendEmail(updatedItems,newItems,deletedItems);
+  sendEmail(updatedItems, newItems, deletedItems);
 
 }
 
@@ -122,12 +149,12 @@ function chunk(array, size) {
 
 function timeCommit() {
   axios({
-    url: 'http://feed.adultdropshipper.com/ecnFeed.cfm?act=update&siteID=508&passkey=2A62698BC5DC612F3A8E1AEC93C718BD',
+    url: ECN_FEED_UPDATE_URL,
     method: 'get'
   }).then(() => {
     console.log("time commit successful");
   }).catch(err => {
-    console.log("Error updating time commit"+ err)
+    console.log("Error updating time commit", err);
   });
 }
 
@@ -136,7 +163,7 @@ function parseXML(itemsToLoop, action) {
   for (let i = 0; i < itemsToLoop.length; i++) {
     let item = {};
     if (action == 'update') {
-      if(Number(itemsToLoop[i]['multiplesOF'][0]) == 1) {
+      if (Number(itemsToLoop[i]['multiplesOF'][0]) == 1) {
         item.title = itemsToLoop[i]['title'][0];
         item.sku = itemsToLoop[i]['itemSKU'][0];
         item.alternateTitle = itemsToLoop[i]['alternatetitle'][0];
@@ -170,149 +197,186 @@ function parseXML(itemsToLoop, action) {
 }
 
 async function updateProductsAvailability(itemsToUpdate) {
-  // let productIds = [];
-  let itemsWithProductIds = [];
-  for (let i = 0; i < itemsToUpdate.length; i++) {
-    // console.log(itemsToUpdate[i]);
-    await getProductId(itemsToUpdate[i]).then(result => {
-      if (result.data.data.productVariants.edges.length) {
-        itemsToUpdate[i].product_id = result.data.data.productVariants.edges[0].node.product.id;
-        itemsWithProductIds.push(itemsToUpdate[i]);
-      } else {
-        itemsToUpdate[i].product_id = '';
-        itemsWithProductIds.push(itemsToUpdate[i]);
-      }
-      //   console.log();
-    }).catch(err => {
-      console.log('Error getting product id');
-    })
+  const itemsWithProductIds = [];
+
+  // 1. Attach Shopify product IDs to each ECN item
+  for (let item of itemsToUpdate) {
+    try {
+      const result = await getProductId(item);
+      const edges = result?.data?.data?.productVariants?.edges || [];
+
+      item.product_id = edges.length
+        ? edges[0].node.product.id
+        : '';
+
+      itemsWithProductIds.push(item);
+    } catch (err) {
+      console.log(`Error getting product id for SKU ${item.sku}:`, err.message);
+      item.product_id = '';
+      itemsWithProductIds.push(item);
+    }
   }
-  // console.log(itemsWithProductIds);
-  for (let i = 0; i < itemsWithProductIds.length; i++) {
-    if (itemsWithProductIds[i].modifyAction == 'update') {
-      if (itemsWithProductIds[i].product_id) {
-        await getProductInfo(itemsWithProductIds[i].product_id).then(result => {
-          // console.log(result.data);
-          let productinShopify = result.data.data.product;
-          let inventoryId = productinShopify.variants.edges[0].node.inventoryItem.id;
-          let inventoryIdWithoutPrefix = inventoryId.replace("gid://shopify/InventoryItem/", "");
-          if (productinShopify.tags.includes(itemsWithProductIds[i].stock)) {
-            console.log(`no changes here for ${itemsWithProductIds[i].title}, product status is the same`);
-            // let tags = productinShopify.tags.filter(tag => tag !== 'Available Now' && tag !== 'Short Wait' && tag !== 'Call your Rep for Availability' && tag !== 'Not Available' && tag !== 'Long Wait');
-            // tags.push(itemsWithProductIds[i].stock);
-            // let publishedStatus = itemsWithProductIds[i].stock == 'Available Now' ? true : false;
-            // let product_id_withoutprefix = itemsWithProductIds[i].product_id.replace("gid://shopify/Product/", "")
-            // let productUpdate = {
-            //     "product": {
-            //       "id": product_id_withoutprefix,
-            //       "tags": tags,
-            //       "published": publishedStatus
-            //     }
-            //   }
-            //   makeProductUpdate(productUpdate).then(response => {
-            //     // console.log(response);
-            //     console.log(`product updated with new categories successfully-->${response.data.product.title}`);
-            //     // console.log(response.data);
-            //   }).catch(err=> {
-            //       // console.log(err);
-            //       console.log('ERROR UPDATING NEW CATEGORIES for product-->'+ productinShopify.title + ' ' + err)
-            //   });
-          } else { //stock statuses are not the same
-            // console.log(`Retrieved status from ECN for ${itemsWithProductIds[i].title} : ${itemsWithProductIds[i].stock} --> Shopifys status ${productinShopify.publishedAt},Shopifys tags ${productinShopify.tags}`)
-            let isAnyImageAvailable = itemsWithProductIds[i].image1 || item.image2;
-            let isThereADescription = itemsWithProductIds[i].description;
-            let unpublishable = !isAnyImageAvailable || !isThereADescription;
-            if(!unpublishable) {
-            let tags = productinShopify.tags.filter(tag => tag !== 'Available Now' && tag !== 'Short Wait' && tag !== 'Call your Rep for Availability' && tag !== 'Not Available' && tag !== 'Long Wait');
-              tags.push(itemsWithProductIds[i].stock);
-              tags = tags.concat(itemsWithProductIds[i].categories);
-              tags = filterUnwantedProductsFromCategories(tags, itemsWithProductIds[i].sku);
 
-              let product_id_withoutprefix = itemsWithProductIds[i].product_id.replace("gid://shopify/Product/", "")
-              let productUpdate = {
-                "product": {
-                  "id": product_id_withoutprefix,
-                  "tags": tags,
-                  "published": true
-                }
-              }
-              let inventoryUpdate = {
-                "location_id": 31145721923,
-                "inventory_item_id": inventoryIdWithoutPrefix,
-                "available": itemsWithProductIds[i].stock == 'Available Now' ? 30 : 0
-              };
-              // console.log(`this product${itemsWithProductIds[i].title} is active, but its stock status is ${itemsWithProductIds[i].stock}`);
-              makeProductUpdate(productUpdate).then(response => {
-                // console.log(response);
-                console.log(`product status updated successfully-->${response.data.product.title}`);
-                updateProductInventory(inventoryUpdate).then(response => {
-                  // console.log(response.data);
-                  console.log(`product inventory updated successfully-->${productinShopify.title}`);
+  // 2. Process each item (update, create, or delete)
+  for (let item of itemsWithProductIds) {
+    const { modifyAction } = item;
 
-                }).catch(err => {
-                  // console.log(err);
-                  console.log('ERROR UPDATING PRODUCT INVENTORY-->' + productinShopify.title + ' ' + err);
-                });
-                updatedItems.push({name:response.data.product.title, status:itemsWithProductIds[i].stock});
-                // console.log(response.data);
-              }).catch(err => {
-                // console.log(err);
-                console.log('ERROR UPDATING PRODUCT-->' + productinShopify.title + ' ' + err);
-              });
-            } else {
-              console.log('not changing status because product has no image and/or no description');
-            }
+    // Skip invalid actions
+    if (!modifyAction) continue;
+
+    // ---------------------------------------------------------
+    // CASE 1: UPDATE EXISTING PRODUCT
+    // ---------------------------------------------------------
+    if (modifyAction === 'update') {
+
+      // CASE 1A: Update an existing Shopify product
+      if (item.product_id) {
+        try {
+          const productInfo = await getProductInfo(item.product_id);
+          const product = productInfo.data.data.product;
+
+          const variant = product.variants.edges[0].node;
+          const inventoryId = variant.inventoryItem.id;
+          const inventoryIdNoPrefix = inventoryId.replace("gid://shopify/InventoryItem/", "");
+          const productIdNoPrefix = item.product_id.replace("gid://shopify/Product/", "");
+
+          const shouldUpdateTags = !product.tags.includes(item.stock);
+          const hasImage = item.image1 || item.image2;     // FIXED: 'item.image2' bug
+          const hasDescription = !!item.description;
+
+          // If we can't publish it properly (missing assets), skip
+          if (!hasImage || !hasDescription) {
+            console.log(`Skipping update for ${item.title}: missing image or description.`);
+            continue;
           }
 
-        }).catch(err => {
-          console.log('ERROR GETTING PRODUCT INFO ' + err);
-        })
+          if (!shouldUpdateTags) {
+            console.log(`No tag change needed for ${item.title}`);
+            continue;
+          }
 
-      } else { //Create product that doesn't exist
-        let productTitle = itemsWithProductIds[i].alternateTitle == ' ' || itemsWithProductIds[i].alternateTitle == '' ? itemsWithProductIds[i].title : itemsWithProductIds[i].alternateTitle;
-        if (!itemsWithProductIds[i].categories.includes('Closeout/discontinued') && !itemsWithProductIds[i].categories.includes('Displays') && !itemsWithProductIds[i].categories.includes('Condom Bowls') && !itemsWithProductIds[i].categories.includes('Tester') && !itemsWithProductIds[i].categories.includes('Fishbowl') && !itemsWithProductIds[i].categories.includes('Cbd') && !productTitle.includes('Hemp') && !isBadVendor(itemsWithProductIds[i].vendor) && !isBadProduct(itemsWithProductIds[i].sku) && !productTitle.includes('bowl') && !productTitle.includes('Bowl') && !productTitle.includes('Display') && !productTitle.includes('Case') && !productTitle.includes('CD') && !productTitle.includes('disc')) {
-          await createProduct(itemsWithProductIds[i]).then(response => {
-            console.log(`Product created successfully--> ${response.data.product.title}`);
-            newItems.push(response.data.product.title);
-          }).catch(err => {
-            console.log(`ERROR creating product ${err}`);
-          })
-        } else {
-          console.log('Not creating item because its a display, bowl, CBD product, OR it is an unwanted vendor-->' + itemsWithProductIds[i].title)
+          // Clean Shopify tags and append new ones
+          let tags = product.tags.filter(t =>
+            !['Available Now', 'Short Wait', 'Call your Rep for Availability',
+              'Not Available', 'Long Wait'].includes(t)
+          );
+
+          tags.push(item.stock);
+          tags = tags.concat(item.categories);
+          tags = filterUnwantedProductsFromCategories(tags, item.sku);
+
+          // Product Update
+          const productUpdatePayload = {
+            product: {
+              id: productIdNoPrefix,
+              tags: tags,
+              published: true
+            }
+          };
+
+          // Inventory Update
+          const inventoryPayload = {
+            location_id: 31145721923,
+            inventory_item_id: inventoryIdNoPrefix,
+            available: item.stock === 'Available Now' ? 30 : 0
+          };
+
+          // Execute Updates
+          const updatedProduct = await makeProductUpdate(productUpdatePayload);
+          console.log(`Product updated → ${updatedProduct.data.product.title}`);
+
+          await updateProductInventory(inventoryPayload);
+          console.log(`Inventory updated → ${product.title}`);
+
+          updatedItems.push({ name: product.title, status: item.stock });
+
+        } catch (err) {
+          console.log(`ERROR updating product ${item.title}:`, err.message);
+        }
+
+        // CASE 1B: Create a new product if it doesn’t exist
+      } else {
+        const productTitle = (!item.alternateTitle || item.alternateTitle.trim() === '')
+          ? item.title
+          : item.alternateTitle;
+
+        if (isInvalidNewProduct(item, productTitle)) {
+          console.log(`Skipped creating (unwanted item): ${item.title}`);
+          continue;
+        }
+
+        try {
+          const created = await createProduct(item);
+          console.log(`Created → ${created.data.product.title}`);
+          newItems.push(created.data.product.title);
+        } catch (err) {
+          console.log(`ERROR creating product ${item.title}:`, err.message);
         }
       }
-    } else { //"Delete" products by unpublishing them
-      if (itemsWithProductIds[i].product_id) {
-        let product_id_withoutprefix = itemsWithProductIds[i].product_id.replace("gid://shopify/Product/", "")
-        let productUpdate = {
-          "product": {
-            "id": product_id_withoutprefix,
-            "tags": ['DELETED'],
-            "published": false
-          }
-        }
-        await makeProductUpdateASYNC(productUpdate).then(response => {
-          console.log(`product "deleted" successfully${response.data.product.title}`);
-          deletedItems.push(response.data.product.title);
-        }).catch(err => {
-          console.log('ERROR deleting product' + err.data);
-          //send err email for error deleting product
-        });
 
-      } else {
-        console.log("tried to delete an item but it doesn't exist, oh well!")
+      // ---------------------------------------------------------
+      // CASE 2: DELETE PRODUCT (unpublish)
+      // ---------------------------------------------------------
+    } else if (modifyAction === 'delete') {
+      if (!item.product_id) {
+        console.log(`Tried deleting but product doesn't exist: ${item.title}`);
+        continue;
+      }
+
+      const productIdNoPrefix = item.product_id.replace("gid://shopify/Product/", "");
+      const deletePayload = {
+        product: {
+          id: productIdNoPrefix,
+          tags: ['DELETED'],
+          published: false
+        }
+      };
+
+      try {
+        const deleted = await makeProductUpdateASYNC(deletePayload);
+        deletedItems.push(deleted.data.product.title);
+        console.log(`"Deleted" → ${deleted.data.product.title}`);
+      } catch (err) {
+        console.log(`ERROR deleting product ${item.title}:`, err.message);
       }
     }
   }
 
-  console.log('Datafeed parsing done!')
-
-
+  console.log('Datafeed parsing done!');
 }
+
+
+// ------------------------------------------------------------------------
+// Helper: should we avoid creating this product?
+// ------------------------------------------------------------------------
+function isInvalidNewProduct(item, productTitle) {
+  const badCategories = [
+    'Closeout/discontinued',
+    'Displays',
+    'Condom Bowls',
+    'Tester',
+    'Fishbowl',
+    'Cbd'
+  ];
+
+  return (
+    badCategories.some(c => item.categories.includes(c)) ||
+    productTitle.includes('Hemp') ||
+    productTitle.includes('bowl') ||
+    productTitle.includes('Bowl') ||
+    productTitle.includes('Display') ||
+    productTitle.includes('Case') ||
+    productTitle.includes('CD') ||
+    productTitle.includes('disc') ||
+    isBadVendor(item.vendor) ||
+    isBadProduct(item.sku)
+  );
+}
+
 
 async function makeProductUpdateASYNC(obj) {
   return axios({
-    url: 'https://febe69a891c04a2e134443805cdcd304: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@try-sassy-box.myshopify.com/admin/api/2020-10/products/' + obj.product.id + '.json',
+    url: shopifyRestUrl(`products/${obj.product.id}.json`),
     method: 'put',
     data: obj
   })
@@ -320,25 +384,25 @@ async function makeProductUpdateASYNC(obj) {
 
 function makeProductUpdate(obj) {
   return axios({
-    url: 'https://febe69a891c04a2e134443805cdcd304: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@try-sassy-box.myshopify.com/admin/api/2020-10/products/' + obj.product.id + '.json',
+    url: shopifyRestUrl(`/products/${obj.product.id}.json`),
     method: 'put',
     data: obj
   })
 }
 function updateProductInventory(obj) {
   return axios({
-    url: 'https://febe69a891c04a2e134443805cdcd304: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@try-sassy-box.myshopify.com/admin/api/2021-04/inventory_levels/set.json/',
+    url: shopifyRestUrl('/inventory_levels/set.json'),
     method: 'post',
     data: obj
   })
 }
 async function getProductId(item) {
-  const endpoint = 'https://try-sassy-box.myshopify.com/admin/api/2020-10/graphql.json'
+  const endpoint = shopifyGraphQLEndpoint();
   return axios({
     url: endpoint,
     method: 'post',
     headers: {
-      'X-Shopify-Access-Token': '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',
+      'X-Shopify-Access-Token': SHOPIFY_ACCESS_TOKEN,
     },
     data: {
       query: `
@@ -359,12 +423,12 @@ async function getProductId(item) {
   });
 }
 async function getProductInfo(product_id) {
-  const endpoint = 'https://try-sassy-box.myshopify.com/admin/api/2020-10/graphql.json'
+  const endpoint = shopifyGraphQLEndpoint();
   return axios({
     url: endpoint,
     method: 'post',
     headers: {
-      'X-Shopify-Access-Token': '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',
+      'X-Shopify-Access-Token': SHOPIFY_ACCESS_TOKEN,
     },
     data: {
       query: `
@@ -392,7 +456,7 @@ async function getProductInfo(product_id) {
 
 
 function isBadVendor(vendor) {
-  let mapArray = ["Shane's World","Hott Products",'Screaming O','Golden Triangle','Adventure Industries, Llc','Bellesa Enterprises Inc','Betru Wellness','Channel 1 Releasing','Cyrex Ltd','East Coast New Nj','Even Technology Co Limited','Flawless 5 Health','Global Protection Corp','Hemp Bomb','Issawrap Inc/p.s. Condoms','Lix Tongue Vibes','Nori Fields Llc','Ohmibod','Old Man China Brush','Phe','Random House, Inc','Rapture Novelties','Rejuviel','Rock Candy Toys','Signs of Life Inc.','Solevy Co','Streem Master','Stud 100', 'Ticklekitty Press', 'Tongue Joy', 'Zero Tolerance', 'Gnarly Ride Inc', 'Little Genie', 'Little Genie Productions Llc.', 'Bijoux Indiscrets', 'Wallace - O Farrell,inc.', 'Icon Brands Inc', 'Abs Holdings', 'Agb Dba Spartacus Enterprises', 'Ball & Chain', 'Ball and Chain', 'Body Action', 'Creative Conceptionsl Llc', 'Dona', 'Emotion Lotion', 'Hustler', 'Id Lubes', 'Joydivision Llc', 'Kingman Industries, Inc', 'Ky','Me','New Concepts - Deeva','Ozze Creations', 'Private Label Productions Llc', 'TP3 LLC', 'Thredly.com', 'Wet Lubes', 'Cousins Group Inc', 'Paradise Marketing Services Pm', 'Carrashield Labs dba Devine 9', 'Novelties By Nass-walk Inc','Tantus, Inc','Topco Sales','Lovehoney, Llc','Adam & Eve','Adam and Eve','Bedroom Products Llc','Evolved Novelties','Fredericks Of Hollywood','Savvy Co Llc','Baci Lingerie','Barely Bare','Leg Avenue Inc.','Prowler','Secrets', 'CB-6000', 'Pink/gun Oil', 'Fuck Sauce','Rocks Off Ltd Usa','Arcwave','', ' ', 'Big Teaze Toys','Kangaroo','South Gator Oils','B.m.s. Enterprises','Fleshlight','Hitachi Majic','Jimmy Jane - Jj Acquisition Llc','Lelo','Novel Creations Usa Inc','Pjur','Rabbit Co.','Emojibator','Perfect Fit Brand Inc.','Pixelrise Llc','Shots America Llc','Ananda Health','East Coast News Nj','Bijoux Indiscets, Sl','Celebrity Knights Llp','Concepts Of Love Rianne S','Hunkyjunk','Ovo','Signs Of Life Inc.','Vedo Toys','Aneros','Bodywand','Rascal Toys','Kiiroo Bv','B. Cumming Company, Inc.','Hitachi Majic Wand','Mimic','New Earth Trading','Novel Creations Usa Inc','Shots America LLC','West Market','Zumio Inc','Lux Fetish','Kama Sutra Company','B.m.s Enterprises', 'Whip Smart', 'Medina Inc','Venwel Logistics Inc.','Xgen Products'];
+  let mapArray = ["Shane's World", "Hott Products", 'Screaming O', 'Golden Triangle', 'Adventure Industries, Llc', 'Bellesa Enterprises Inc', 'Betru Wellness', 'Channel 1 Releasing', 'Cyrex Ltd', 'East Coast New Nj', 'Even Technology Co Limited', 'Flawless 5 Health', 'Global Protection Corp', 'Hemp Bomb', 'Issawrap Inc/p.s. Condoms', 'Lix Tongue Vibes', 'Nori Fields Llc', 'Ohmibod', 'Old Man China Brush', 'Phe', 'Random House, Inc', 'Rapture Novelties', 'Rejuviel', 'Rock Candy Toys', 'Signs of Life Inc.', 'Solevy Co', 'Streem Master', 'Stud 100', 'Ticklekitty Press', 'Tongue Joy', 'Zero Tolerance', 'Gnarly Ride Inc', 'Little Genie', 'Little Genie Productions Llc.', 'Bijoux Indiscrets', 'Wallace - O Farrell,inc.', 'Icon Brands Inc', 'Abs Holdings', 'Agb Dba Spartacus Enterprises', 'Ball & Chain', 'Ball and Chain', 'Body Action', 'Creative Conceptionsl Llc', 'Dona', 'Emotion Lotion', 'Hustler', 'Id Lubes', 'Joydivision Llc', 'Kingman Industries, Inc', 'Ky', 'Me', 'New Concepts - Deeva', 'Ozze Creations', 'Private Label Productions Llc', 'TP3 LLC', 'Thredly.com', 'Wet Lubes', 'Cousins Group Inc', 'Paradise Marketing Services Pm', 'Carrashield Labs dba Devine 9', 'Novelties By Nass-walk Inc', 'Tantus, Inc', 'Topco Sales', 'Lovehoney, Llc', 'Adam & Eve', 'Adam and Eve', 'Bedroom Products Llc', 'Evolved Novelties', 'Fredericks Of Hollywood', 'Savvy Co Llc', 'Baci Lingerie', 'Barely Bare', 'Leg Avenue Inc.', 'Prowler', 'Secrets', 'CB-6000', 'Pink/gun Oil', 'Fuck Sauce', 'Rocks Off Ltd Usa', 'Arcwave', '', ' ', 'Big Teaze Toys', 'Kangaroo', 'South Gator Oils', 'B.m.s. Enterprises', 'Fleshlight', 'Hitachi Majic', 'Jimmy Jane - Jj Acquisition Llc', 'Lelo', 'Novel Creations Usa Inc', 'Pjur', 'Rabbit Co.', 'Emojibator', 'Perfect Fit Brand Inc.', 'Pixelrise Llc', 'Shots America Llc', 'Ananda Health', 'East Coast News Nj', 'Bijoux Indiscets, Sl', 'Celebrity Knights Llp', 'Concepts Of Love Rianne S', 'Hunkyjunk', 'Ovo', 'Signs Of Life Inc.', 'Vedo Toys', 'Aneros', 'Bodywand', 'Rascal Toys', 'Kiiroo Bv', 'B. Cumming Company, Inc.', 'Hitachi Majic Wand', 'Mimic', 'New Earth Trading', 'Novel Creations Usa Inc', 'Shots America LLC', 'West Market', 'Zumio Inc', 'Lux Fetish', 'Kama Sutra Company', 'B.m.s Enterprises', 'Whip Smart', 'Medina Inc', 'Venwel Logistics Inc.', 'Xgen Products'];
   return mapArray.includes(vendor);
 }
 
@@ -417,76 +481,76 @@ async function createProduct(item) {
     })
   }
   // if (item.description) {
-    let product_tags = item.categories.concat(item.stock);
-    if(!isAnyImageAvailable) {
-      product_tags.push('No Image')
-    }
-    if(!isThereADescription) {
-      product_tags.push('No Description')
-    }
-    product_tags.push('New');
-    if((product_tags.includes('Vibrators') && product_tags.includes('Remote Control')) || (product_tags.includes('Vibrators') && product_tags.includes('App Compatible')) ) {
-      product_tags.push('remote-vibrator');
-    }
-    let newProductObj = {
-      "product": {
-        "title": item.alternateTitle == ' ' || item.alternateTitle == '' ? item.title : item.alternateTitle,
-        "body_html": item.description,
-        "vendor": item.vendor,
-        "product_type": item.id,
-        "tags": product_tags,
-        "variants": [{
-          "title": "Default Title",
-          "price": item.price * 2,
-          "sku": item.sku,
-          "inventory_policy": "deny",
-          "fulfillment_service": "manual",
-          "inventory_management": "shopify",
-          "taxable": true,
-          "barcode": item.barcode,
-          "grams": 0,
-          "weight": 0,
-          "weight_unit": "lb",
-          "inventory_quantity": item.stock == 'Available Now' ? 30 : 0,
-          "requires_shipping": true,
+  let product_tags = item.categories.concat(item.stock);
+  if (!isAnyImageAvailable) {
+    product_tags.push('No Image')
+  }
+  if (!isThereADescription) {
+    product_tags.push('No Description')
+  }
+  product_tags.push('New');
+  if ((product_tags.includes('Vibrators') && product_tags.includes('Remote Control')) || (product_tags.includes('Vibrators') && product_tags.includes('App Compatible'))) {
+    product_tags.push('remote-vibrator');
+  }
+  let newProductObj = {
+    "product": {
+      "title": item.alternateTitle == ' ' || item.alternateTitle == '' ? item.title : item.alternateTitle,
+      "body_html": item.description,
+      "vendor": item.vendor,
+      "product_type": item.id,
+      "tags": product_tags,
+      "variants": [{
+        "title": "Default Title",
+        "price": item.price * 2,
+        "sku": item.sku,
+        "inventory_policy": "deny",
+        "fulfillment_service": "manual",
+        "inventory_management": "shopify",
+        "taxable": true,
+        "barcode": item.barcode,
+        "grams": 0,
+        "weight": 0,
+        "weight_unit": "lb",
+        "inventory_quantity": item.stock == 'Available Now' ? 30 : 0,
+        "requires_shipping": true,
 
-        }],
-        "images": productImages,
-        "published": unpublishable ? false : true
-      }
+      }],
+      "images": productImages,
+      "published": unpublishable ? false : true
     }
-    // console.log(newProductObj);
-    return axios({
-      url: 'https://febe69a891c04a2e134443805cdcd304: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@try-sassy-box.myshopify.com/admin/api/2020-10/products.json',
-      method: 'post',
-      data: newProductObj
-    });
-    //tag with- grammarCheck
+  }
+  // console.log(newProductObj);
+  return axios({
+    url: shopifyRestUrl('/products.json'),
+    method: 'post',
+    data: newProductObj
+  });
+  //tag with- grammarCheck
   // } else {
-    // console.log("no item description for-- " + item.title + " not making this");
+  // console.log("no item description for-- " + item.title + " not making this");
   // }
 }
 
-function sendEmail(updatedItems,newItems,deletedItems) {
+function sendEmail(updatedItems, newItems, deletedItems) {
   let strToSend = '<b>Datafeed Updates: </b><br><br>';
-
+  let mailOptions = createMailOptions('DataFeed Update', strToSend);
   if (newItems) {
-    let newItemsFiltered =  newItems.filter(product => !deletedItems.includes(product));
+    let newItemsFiltered = newItems.filter(product => !deletedItems.includes(product));
     let newItemsStr = '';
     newItemsFiltered.forEach(product => {
       newItemsStr += product + '<br>'
     });
     strToSend += '<b>New Items:</b><br>' + newItemsStr + '<br>';
   }
-  if(updatedItems) {
-    let updatedItemsFiltered =  updatedItems.filter(product => !deletedItems.includes(product.name));
+  if (updatedItems) {
+    let updatedItemsFiltered = updatedItems.filter(product => !deletedItems.includes(product.name));
     let updatedItemsStr = '';
     updatedItemsFiltered.forEach(product => {
       updatedItemsStr += product.name + '--------- New Status: ' + product.status + '<br>'
     });
     strToSend += '<b>Updated Items:</b><br>' + updatedItemsStr + '<br>';
   }
-  if(deletedItems) {
+  if (deletedItems) {
     let deletedItemsStr = '';
     deletedItems.forEach(product => {
       deletedItemsStr += product + '<br>'
@@ -494,7 +558,7 @@ function sendEmail(updatedItems,newItems,deletedItems) {
     strToSend += '<b>Deleted Items:</b><br>' + deletedItemsStr + '<br>';
   }
   mailOptions.html = strToSend;
-  transporter.sendMail(mailOptions, function(err, info){
+  transporter.sendMail(mailOptions, function (err, info) {
     if (err) {
       console.log('error sending update email' + err);
     } else {
@@ -504,8 +568,8 @@ function sendEmail(updatedItems,newItems,deletedItems) {
 
 }
 function sendErrEmail(error) {
-  mailOptions.html = 'Error Getting Datafeed <br>' + error;
-  transporter.sendMail(mailOptions, function(err, info){
+  let mailOptions = createMailOptions('Error Getting Datafeed', 'Error Getting Datafeed <br>' + error);
+  transporter.sendMail(mailOptions, function (err, info) {
     if (err) {
       console.log('error sending error email' + err);
     } else {
@@ -514,132 +578,132 @@ function sendErrEmail(error) {
   });
 
 }
-function sendXMLEmail(xml) {
-  xmlMailOptions.text = xml;
-  transporter.sendMail(xmlMailOptions, function(err, info){
-    if (err) {
-      console.log('error sending XML email' + err);
-    } else {
-      console.log('XML email sent: ' + info.response);
-    }
-  });
-}
+// function sendXMLEmail(xml) {
+//   xmlMailOptions.text = xml;
+//   transporter.sendMail(xmlMailOptions, function(err, info){
+//     if (err) {
+//       console.log('error sending XML email' + err);
+//     } else {
+//       console.log('XML email sent: ' + info.response);
+//     }
+//   });
+// }
 function filterUnwantedProductsFromCategories(tags, sku) {
   let categoriesToReturn = tags;
-  if (categoriesToReturn.includes('Bondage & Fetish') && isBadBondageAndFetish(sku)){
+  if (categoriesToReturn.includes('Bondage & Fetish') && isBadBondageAndFetish(sku)) {
     console.log('Removing tag--Bondage & Fetish from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Bondage & Fetish');
   }
-  if (categoriesToReturn.includes('Masturbators & Strokers') && isBadMasturbator(sku)){
+  if (categoriesToReturn.includes('Masturbators & Strokers') && isBadMasturbator(sku)) {
     console.log('Removing tag--Masturbators & Strokers from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Masturbators & Strokers');
   }
-  if ((categoriesToReturn.includes('Anal Beads') || categoriesToReturn.includes('Anal Masturbator') || categoriesToReturn.includes('Anal Plug') || categoriesToReturn.includes('Anal Stimulation'))  && isBadAnalToy(sku)){
+  if ((categoriesToReturn.includes('Anal Beads') || categoriesToReturn.includes('Anal Masturbator') || categoriesToReturn.includes('Anal Plug') || categoriesToReturn.includes('Anal Stimulation')) && isBadAnalToy(sku)) {
     console.log('Removing tag-- Anal Toys from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Anal Beads' && cat !== 'Anal Masturbator' && cat !== 'Anal Plug' && cat !== 'Anal Stimulation');
   }
-  if (categoriesToReturn.includes('Cockrings') && isBadCockring(sku)){
+  if (categoriesToReturn.includes('Cockrings') && isBadCockring(sku)) {
     console.log('Removing tag--Cockrings from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Cockrings');
   }
-  if (categoriesToReturn.includes('Lingerie') && isBadLingerie(sku)){
+  if (categoriesToReturn.includes('Lingerie') && isBadLingerie(sku)) {
     console.log('Removing tag--Lingerie from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Lingerie');
   }
-  if (categoriesToReturn.includes('Bath & Body') && isBadBathAndBody(sku)){
+  if (categoriesToReturn.includes('Bath & Body') && isBadBathAndBody(sku)) {
     console.log('Removing tag--Bath & Body from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Bath & Body');
   }
-  if (categoriesToReturn.includes('Vibrators') && isBadVibrator(sku)){
+  if (categoriesToReturn.includes('Vibrators') && isBadVibrator(sku)) {
     console.log('Removing tag--Vibrators from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Vibrators');
   }
-  if (categoriesToReturn.includes('Realistic Dongs') && isBadRealDildo(sku)){
+  if (categoriesToReturn.includes('Realistic Dongs') && isBadRealDildo(sku)) {
     console.log('Removing tag--Realistic Dongs from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Realistic Dongs');
   }
-  if ((categoriesToReturn.includes('Silicone') && categoriesToReturn.includes('Dildos & Dongs')) && isBadSiliconeDildo(sku)){
+  if ((categoriesToReturn.includes('Silicone') && categoriesToReturn.includes('Dildos & Dongs')) && isBadSiliconeDildo(sku)) {
     console.log('Removing tag--Silicone Dildo from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Silicone');
   }
-  if ((categoriesToReturn.includes('Kit') && categoriesToReturn.includes('Couples')) && isBadCouplesKit(sku)){
+  if ((categoriesToReturn.includes('Kit') && categoriesToReturn.includes('Couples')) && isBadCouplesKit(sku)) {
     console.log('Removing tag--Couples Kit from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Couples');
   }
-  if (categoriesToReturn.includes('Remote Control') && isBadRemoteControl(sku)){
+  if (categoriesToReturn.includes('Remote Control') && isBadRemoteControl(sku)) {
     console.log('Removing tag--Remote Control from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Remote Control');
   }
-  if (categoriesToReturn.includes('Lotion') && isBadLotion(sku)){
+  if (categoriesToReturn.includes('Lotion') && isBadLotion(sku)) {
     console.log('Removing tag--Lotion from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Lotion');
   }
-  if (categoriesToReturn.includes('Kit') && isBadKit(sku)){
+  if (categoriesToReturn.includes('Kit') && isBadKit(sku)) {
     console.log('Removing tag--Kit from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Kit');
   }
-  if (categoriesToReturn.includes('Gels & Creams') && isBadGel(sku)){
+  if (categoriesToReturn.includes('Gels & Creams') && isBadGel(sku)) {
     console.log('Removing tag--Gels & Creams from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Gels & Creams');
   }
-  if (categoriesToReturn.includes('Water Based') && isBadWaterBased(sku)){
+  if (categoriesToReturn.includes('Water Based') && isBadWaterBased(sku)) {
     console.log('Removing tag--Water Based from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Water Based');
   }
-  if (categoriesToReturn.includes('Massage Oils') && isBadMassageOil(sku)){
+  if (categoriesToReturn.includes('Massage Oils') && isBadMassageOil(sku)) {
     console.log('Removing tag--Massage Oils from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Massage Oils');
   }
 
-  if (categoriesToReturn.includes('Lubricants') && isBadLubricant(sku)){
+  if (categoriesToReturn.includes('Lubricants') && isBadLubricant(sku)) {
     console.log('Removing tag--Lubricants from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Lubricants');
   }
-  if (categoriesToReturn.includes('Dildos & Dongs') && isBadDildo(sku)){
+  if (categoriesToReturn.includes('Dildos & Dongs') && isBadDildo(sku)) {
     console.log('Removing tag--Dildos & Dongs from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Dildos & Dongs');
   }
-  if (categoriesToReturn.includes('Bendable') && isBadBendable(sku)){
+  if (categoriesToReturn.includes('Bendable') && isBadBendable(sku)) {
     console.log('Removing tag--Bendable from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Bendable');
   }
-  if (categoriesToReturn.includes('Mouth Masturbator') && isBadMouthMasturbator(sku)){
+  if (categoriesToReturn.includes('Mouth Masturbator') && isBadMouthMasturbator(sku)) {
     console.log('Removing tag--Mouth Masturbator from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Mouth Masturbator');
   }
-  if (categoriesToReturn.includes('Double Dongs') && isBadDoubleDildo(sku)){
+  if (categoriesToReturn.includes('Double Dongs') && isBadDoubleDildo(sku)) {
     console.log('Removing tag--Double Dongs from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Double Dongs');
   }
-  if (categoriesToReturn.includes('Anal Plug') && isBadAnalPlug(sku)){
+  if (categoriesToReturn.includes('Anal Plug') && isBadAnalPlug(sku)) {
     console.log('Removing tag--Anal Plug from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Anal Plug');
   }
-  if (categoriesToReturn.includes('Games') && isBadGame(sku)){
+  if (categoriesToReturn.includes('Games') && isBadGame(sku)) {
     console.log('Removing tag--Game from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Games');
   }
-  if (categoriesToReturn.includes('Novelty Items') && isBadNoveltyItem(sku)){
+  if (categoriesToReturn.includes('Novelty Items') && isBadNoveltyItem(sku)) {
     console.log('Removing tag--Novelty Items from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Novelty Items');
   }
-  if (categoriesToReturn.includes('Harness Accessories') && isBadHarnessAccessory(sku)){
+  if (categoriesToReturn.includes('Harness Accessories') && isBadHarnessAccessory(sku)) {
     console.log('Removing tag--Harness Accessories from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Harness Accessories');
   }
-  if (categoriesToReturn.includes('strap-on') && isBadStrapOn(sku)){
+  if (categoriesToReturn.includes('strap-on') && isBadStrapOn(sku)) {
     console.log('Removing tag-- strap-on from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'strap-on');
   }
-  if (categoriesToReturn.includes('Accessories') && isBadAccessory(sku)){
+  if (categoriesToReturn.includes('Accessories') && isBadAccessory(sku)) {
     console.log('Removing tag-- Accessories from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Accessories');
   }
-  if (categoriesToReturn.includes('Kit') && isBadKit(sku)){
+  if (categoriesToReturn.includes('Kit') && isBadKitProduct(sku)) {
     console.log('Removing tag-- Kit from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Kit');
   }
-  if (categoriesToReturn.includes('Bath Time Play') && isBadBathTimePlay(sku)){
+  if (categoriesToReturn.includes('Bath Time Play') && isBadBathTimePlay(sku)) {
     console.log('Removing tag-- Bath Time Play from product: ' + sku)
     categoriesToReturn = categoriesToReturn.filter(cat => cat !== 'Bath Time Play');
   }
@@ -699,7 +763,7 @@ function isBadLotion(sku) {
   let unwantedProducts = exclusion_list.unwantedLotionProducts;
   return unwantedProducts.includes(sku);
 }
-function isBadKit(sku) {
+function isBadKitProduct(sku) {
   let unwantedProducts = exclusion_list.unwantedKitProducts;
   return unwantedProducts.includes(sku);
 }
