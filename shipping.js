@@ -1,3 +1,4 @@
+//Shipping Codes
 exports.getShippingId = function(shippingTitle) {
     if(shippingTitle.includes('Free Shipping') || shippingTitle.includes('Flat Rate')) {
         return 6;

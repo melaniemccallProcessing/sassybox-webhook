@@ -1,252 +1,406 @@
+// index.js
+// Shopify → ECN bridge: receives Shopify order webhooks,
+// sends XML order to ECN, and tags the Shopify order with the ECN order id.
 
-const express = require('express')
-const app = express()
-const getRawBody = require('raw-body')
-const crypto = require('crypto')
-const secretKey = '173db07ef1c2e6c11ad41d4ad0a427035ae1b39a301056a75897232da5e839c0'
+const express = require('express');
+const getRawBody = require('raw-body');
+const crypto = require('crypto');
 const axios = require('axios');
-var xmlParser = require('xml2js');
-// var FormData = require('form-data');
-var request = require('request');
-var nodemailer = require('nodemailer');
-var shipping = require('./shipping.js');
+const xmlParser = require('xml2js');
+const request = require('request');
+const nodemailer = require('nodemailer');
+const shipping = require('./shipping.js');
 
-var transporter = nodemailer.createTransport({
-    service: 'outlook',
-    auth: {
-      user: 'sassybox-dev@outlook.com',
-      pass: 'Mary_jewel23'
-    }
-  });
+const app = express();
 
-var errorMailOptions = {
-    from: {
-        name: 'SassyBox Shop',
-        address: 'sassybox-dev@outlook.com'
-    },
-    to: 'bluescript17@gmail.com, contact@sassyboxshop.com',
-    replyTo: 'contact@sassyboxshop.com',
-    subject: 'Error with Processing Order #',
-    text: ''
-};
+// ---------- Configuration (from environment) ----------
 
- let xmlTest = '<?xmlversion="1.0"encoding="ISO-8859-1"?> <content> <orders> <order> <orderid></orderid> <refordernumber></refordernumber> <clientid></clientid> <clientstoreid></clientstoreid> <status></status> <genericshippingmethodid></genericshippingmethodid> <lineitems> <item> <str_sku></str_sku> <itemid></itemid> <price></price> <quantity></quantity> </item> </lineitems> </order> </orders> <rejectedorders> <ro_order> <ro_refordernumber>000</ro_refordernumber> <ro_clientid>6678</ro_clientid> <ro_clientstoreid>791</ro_clientstoreid> <ro_rejectedreason>CustomerCountryisnotapproved</ro_rejectedreason> </ro_order><ro_order> <ro_refordernumber>000</ro_refordernumber> <ro_clientid>6678</ro_clientid> <ro_clientstoreid>791</ro_clientstoreid> <ro_rejectedreason>CustomerCountryisnotapproved</ro_rejectedreason> </ro_order> </rejectedorders> <itemsnotfound> <inf_item> <inf_refordernumber></inf_refordernumber> <inf_itemsku></inf_itemsku> <inf_itemid></inf_itemid> <inf_rejectedreason></inf_rejectedreason> </inf_item> <inf_item> <inf_refordernumber></inf_refordernumber> <inf_itemsku></inf_itemsku> <inf_itemid></inf_itemid> <inf_rejectedreason></inf_rejectedreason> </inf_item> </itemsnotfound> </content>';
-//  xmlParser.parseString(xmlTest, function(err,result) {
-    //  console.log(result['content']['orders'][0]['order'][0]['orderid'][0]);
-//  })
- let attemptedXML = '';
-app.post('/order', async (req, res) => {
-  console.log('🎉 We got an order!')
+// Shopify webhook secret (for HMAC verification)
+const SHOPIFY_WEBHOOK_SECRET = process.env.SHOPIFY_WEBHOOK_SECRET;
 
-  // We'll compare the hmac to our own hash
-  const hmac = req.get('X-Shopify-Hmac-Sha256')
+// Shopify Admin credentials (for REST API calls)
+const SHOPIFY_API_KEY = process.env.SHOPIFY_API_KEY;
+const SHOPIFY_API_PASSWORD = process.env.SHOPIFY_API_PASSWORD;
+const SHOPIFY_SHOP_DOMAIN = process.env.SHOPIFY_SHOP_DOMAIN; // e.g. "try-sassy-box.myshopify.com"
+const SHOPIFY_API_VERSION = process.env.SHOPIFY_API_VERSION || '2020-10';
 
-  // Use raw-body to get the body (buffer)
-  const body = await getRawBody(req)
+// ECN / dropshipper config
+const ECN_CLIENT_ID = process.env.ECN_CLIENT_ID || '6678';
+const ECN_STORE_ID = process.env.ECN_STORE_ID || '791';
+const ECN_PASSKEY = process.env.ECN_PASSKEY; // passkey used in ECN URLs
+const ECN_BASE_URL = process.env.ECN_BASE_URL || 'http://adultshipper.com/back';
 
-  // Create a hash using the body and our key
-  const hash = crypto
-    .createHmac('sha256', secretKey)
-    .update(body, 'utf8', 'hex')
-    .digest('base64')
+// Email config
+const MAIL_FROM_NAME = process.env.MAIL_FROM_NAME || 'SassyBox Shop';
+const MAIL_FROM_ADDRESS = process.env.MAIL_FROM_ADDRESS;
+const MAIL_TO_ERRORS = process.env.MAIL_TO_ERRORS; // comma-separated list
+const MAIL_SMTP_SERVICE = process.env.MAIL_SMTP_SERVICE || 'outlook';
+const MAIL_SMTP_USER = process.env.MAIL_SMTP_USER;
+const MAIL_SMTP_PASS = process.env.MAIL_SMTP_PASS;
 
-  // Compare our hash to Shopify's hash
-  if (hash === hmac) {
-    // It's a match! All good
-    console.log('Phew, it came from Shopify!')
-    res.sendStatus(200)
-    const order = JSON.parse(body.toString())
-    // console.log(order);
-    placeOrderToECN(order);
-
-
-  } else {
-    // No match! This request didn't originate from Shopify
-    console.log('Danger! Not from Shopify!')
-    res.sendStatus(403)
-  }
-})
-
-app.listen(process.env.PORT || 8000, () => console.log('Example app listening on port 8000!'))
-
-function sendErrEmail(mailOptions){
-    transporter.sendMail(mailOptions, function(err, info){
-        if (err) {
-          console.log('error sending error email' + err);
-        } else {
-          console.log('Error email sent: ' + info.response);
-        }
-    });
+// Basic sanity check in logs (optional, you can remove)
+if (!SHOPIFY_WEBHOOK_SECRET) {
+  console.warn('⚠️ SHOPIFY_WEBHOOK_SECRET is not set – webhook verification will fail.');
+}
+if (!SHOPIFY_API_KEY || !SHOPIFY_API_PASSWORD || !SHOPIFY_SHOP_DOMAIN) {
+  console.warn('⚠️ Shopify Admin credentials are not fully configured.');
+}
+if (!ECN_PASSKEY) {
+  console.warn('⚠️ ECN_PASSKEY is not set.');
+}
+if (!MAIL_FROM_ADDRESS || !MAIL_SMTP_USER || !MAIL_SMTP_PASS || !MAIL_TO_ERRORS) {
+  console.warn('⚠️ Email transport is not fully configured.');
 }
 
+// ---------- Email Transport ----------
+
+const transporter = nodemailer.createTransport({
+  service: MAIL_SMTP_SERVICE,
+  auth: {
+    user: MAIL_SMTP_USER,
+    pass: MAIL_SMTP_PASS,
+  },
+});
+
+/**
+ * Create a fresh error email options object.
+ * We avoid mutating a single global mailOptions over time.
+ */
+function createErrorMailOptions(subjectSuffix, text) {
+  return {
+    from: {
+      name: MAIL_FROM_NAME,
+      address: MAIL_FROM_ADDRESS,
+    },
+    to: MAIL_TO_ERRORS,
+    replyTo: MAIL_FROM_ADDRESS,
+    subject: `Error with Processing Order #${subjectSuffix || ''}`,
+    text: text || '',
+  };
+}
+
+function sendErrEmail(mailOptions) {
+  transporter.sendMail(mailOptions, function (err, info) {
+    if (err) {
+      console.log('Error sending error email:', err);
+    } else {
+      console.log('Error email sent:', info.response);
+    }
+  });
+}
+
+// ---------- Helpers ----------
+
+/**
+ * Build Shopify REST Admin API URL.
+ * Example path: `/products/12345.json?fields=product_type`
+ */
+function shopifyRestUrl(path) {
+  return (
+    `https://${SHOPIFY_API_KEY}:${SHOPIFY_API_PASSWORD}` +
+    `@${SHOPIFY_SHOP_DOMAIN}/admin/api/${SHOPIFY_API_VERSION}${path}`
+  );
+}
+
+/**
+ * Verify Shopify webhook using HMAC header and raw body buffer.
+ */
+function verifyShopifyWebhook(hmacHeader, bodyBuffer) {
+  if (!SHOPIFY_WEBHOOK_SECRET) return false;
+
+  const generatedHash = crypto
+    .createHmac('sha256', SHOPIFY_WEBHOOK_SECRET)
+    .update(bodyBuffer, 'utf8', 'hex')
+    .digest('base64');
+
+  return crypto.timingSafeEqual(Buffer.from(generatedHash), Buffer.from(hmacHeader || '', 'utf8'));
+}
+
+/**
+ * Wrap `request` in a Promise so we can use async/await.
+ */
+function requestAsync(options) {
+  return new Promise((resolve, reject) => {
+    request(options, (error, response) => {
+      if (error) return reject(error);
+      return resolve(response);
+    });
+  });
+}
+
+// ---------- Core Route: Shopify Order Webhook ----------
+
+app.post('/order', async (req, res) => {
+  console.log('🎉 We got an order webhook!');
+
+  try {
+    const hmac = req.get('X-Shopify-Hmac-Sha256');
+    const body = await getRawBody(req);
+
+    const isValid = verifyShopifyWebhook(hmac, body);
+
+    if (!isValid) {
+      console.log('🚫 HMAC verification failed – request is not from Shopify.');
+      return res.sendStatus(403);
+    }
+
+    console.log('✅ HMAC verified – request came from Shopify.');
+    res.sendStatus(200); // Acknowledge to Shopify quickly
+
+    const order = JSON.parse(body.toString());
+    await placeOrderToECN(order);
+  } catch (err) {
+    console.error('Unexpected error handling webhook:', err);
+    const mailOptions = createErrorMailOptions('', `Unexpected error handling webhook:\n\n${err.stack || err}`);
+    sendErrEmail(mailOptions);
+  }
+});
+
+// ---------- ECN Order Placement ----------
 
 async function placeOrderToECN(order) {
-    errorMailOptions.subject += order.order_number;
-    let orderShippingId;
+  // Use order_number for logging & email subjects
+  const orderNumber = order.order_number;
+  let attemptedXML = '';
 
-    if(order.shipping_lines.length) {
-        orderShippingId = shipping.getShippingId(order.shipping_lines[0]['title']) ? shipping.getShippingId(order.shipping_lines[0]['title']) : 6;
-    } else {
-        orderShippingId = 6;
-    }
+  try {
+    // Determine shipping method id from your shipping helper
+    const orderShippingId = order.shipping_lines.length
+      ? (shipping.getShippingId(order.shipping_lines[0].title) || 6)
+      : 6;
 
+    // Build order header XML
     let xmlStr = `<?xml version="1.0" encoding="ISO-8859-1"?>
-    <orders>
-        <order>
-            <orderheader>
-                <refordernumber>${order.order_number}</refordernumber>
-                <ordertotal>${order.total_price}</ordertotal>
-                <clientid>6678</clientid>
-                <clientstoreid>791</clientstoreid>
-                <firstname>${order.shipping_address.first_name}</firstname>
-                <lastname>${order.shipping_address.last_name}</lastname>
-                <email>${order.customer.email}</email>
-                <phone1>${order.customer.phone}</phone1>
-                <phone2></phone2>
-                <phone3></phone3>
-                <shiptoaddress1>${order.shipping_address.address1}</shiptoaddress1>
-                <shiptoaddress2>${order.shipping_address.address2}</shiptoaddress2>
-                <shiptocity>${order.shipping_address.city}</shiptocity>
-                <shiptostate>${order.shipping_address.province_code}</shiptostate>
-                <shiptozip>${order.shipping_address.zip}</shiptozip>
-                <shiptocountry>${order.shipping_address.country_code}</shiptocountry>
-                <genericshippingmethodid>${orderShippingId}</genericshippingmethodid>
-                <invoiceheaderbase64></invoiceheaderbase64>
-                <fillstatusid>4</fillstatusid>
-                <packingincludesid>1</packingincludesid>
-                <orderpauselevelid></orderpauselevelid>
-                <invoicefootertext></invoicefootertext>
-                <signatureconfirmationid>0</signatureconfirmationid>
-                <insuranceid></insuranceid>
-                <saturdaydeliveryid>1</saturdaydeliveryid>
-            </orderheader>
-            <lineitems>`
-            ;
-    // let itemsPromise = new Promise((resolve, reject) => {
-        //products that aren't from route app
-    let itemsToOrder = order.line_items.filter((item)=> {return item.title != 'Route Package Protection'});
-    console.log(itemsToOrder);
-    for(let index = 0; index < itemsToOrder.length; index++) {
-                console.log(index);
+<orders>
+  <order>
+    <orderheader>
+      <refordernumber>${orderNumber}</refordernumber>
+      <ordertotal>${order.total_price}</ordertotal>
+      <clientid>${ECN_CLIENT_ID}</clientid>
+      <clientstoreid>${ECN_STORE_ID}</clientstoreid>
+      <firstname>${order.shipping_address.first_name}</firstname>
+      <lastname>${order.shipping_address.last_name}</lastname>
+      <email>${order.customer.email}</email>
+      <phone1>${order.customer.phone || ''}</phone1>
+      <phone2></phone2>
+      <phone3></phone3>
+      <shiptoaddress1>${order.shipping_address.address1}</shiptoaddress1>
+      <shiptoaddress2>${order.shipping_address.address2 || ''}</shiptoaddress2>
+      <shiptocity>${order.shipping_address.city}</shiptocity>
+      <shiptostate>${order.shipping_address.province_code}</shiptostate>
+      <shiptozip>${order.shipping_address.zip}</shiptozip>
+      <shiptocountry>${order.shipping_address.country_code}</shiptocountry>
+      <genericshippingmethodid>${orderShippingId}</genericshippingmethodid>
+      <invoiceheaderbase64></invoiceheaderbase64>
+      <fillstatusid>4</fillstatusid>
+      <packingincludesid>1</packingincludesid>
+      <orderpauselevelid></orderpauselevelid>
+      <invoicefootertext></invoicefootertext>
+      <signatureconfirmationid>0</signatureconfirmationid>
+      <insuranceid></insuranceid>
+      <saturdaydeliveryid>1</saturdaydeliveryid>
+    </orderheader>
+    <lineitems>`;
 
-                let product_type;
-                let url = 'https://febe69a891c04a2e134443805cdcd304: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@try-sassy-box.myshopify.com/admin/api/2020-10/products/' + itemsToOrder[index].product_id + '.json?fields=product_type';
+    // Filter out Route app protection line items
+    const itemsToOrder = order.line_items.filter(
+      (item) => item.title !== 'Route Package Protection'
+    );
 
-                await axios.get(url)
-                .then(response => {
-                    console.log(response.data.product.product_type);
-                    product_type = response.data.product.product_type;
-                xmlStr +=`<item>
-                        <itemSKU>${itemsToOrder[index].sku}</itemSKU>
-                        <itemid>${product_type}</itemid>
-                        <quantity>${itemsToOrder[index].quantity}</quantity>
-                        <price>${itemsToOrder[index].price}</price>
-                    </item>`;
-                })
-                .catch(error => {
-                    console.log(error);
-                });
-        };
-        // console.log(xmlStr);
-    // .then(()=> {
-        xmlStr += `</lineitems>
-        </order>
-        </orders>`;
-        attemptedXML += xmlStr;
-        let order_url = 'http://adultshipper.com/back/processxmlorder2.cfm?passkey=7951D77D8D073EFC27A6138CCBC9FC4C&clientID=6678&storeid=791';
-        console.log(xmlStr);
-        var options = {
-            'method': 'POST',
-            'url': order_url,
-            'headers': {
-            },
-            formData: {
-                'processxmlorder': xmlStr
-            }
-        };
-        request(options, function (error, response) {
-            if (error) {
-                errorMailOptions.text = `Error sending order to ECN \n\n${error}`;
-                errorMailOptions.text += `\n\nAttempted XML: \n\n ${attemptedXML}`;
-                sendErrEmail(errorMailOptions);
-                throw new Error(error);
-            }
-            xmlParser.parseString(response.body, function(err,result) {
-                if(err){console.log(err)}
-                let ecnOrderId = result['content']['orders'][0]['order'][0]['orderid'][0];
-                let rejectedOrderReason = result.content.rejectedorders[0]['ro_order'][0].ro_rejectedreason[0];
-                let rejectedItems = [];
-                let itemsNotFound = result.content.itemsnotfound[0]['inf_item'];
-                itemsNotFound.forEach(item => {
-                    let rejectedItem = {};
-                    if(item['inf_itemsku'][0] != ' ') {
-                        // console.l
-                        rejectedItem.sku = item['inf_itemsku'][0];
-                    }
-                    if(item['inf_rejectedreason'][0] != ' ') {
-                        rejectedItem.reason = item['inf_rejectedreason'][0];
-                    }
-                    if(Object.keys(rejectedItem).length) {
-                        rejectedItems.push(rejectedItem);
-                    }
-                })
-               if(rejectedOrderReason != ' ') {
-                   console.log('Rejected items:' + rejectedItems);
-                   console.log('Rejected Order Reason:' + rejectedOrderReason);
-                   let mailText = '';
-                   if(rejectedOrderReason) {
-                      mailText += 'Rejected Order Reason:\n';
-                      mailText += rejectedOrderReason + '\n\n';
-                    }
-                   if(rejectedItems.length > 0) {
-                        mailText += 'Rejected Items In Order;\n';
-                        rejectedItems.forEach(item => {
-                            mailText += 'Item SKU: ' + item.sku + '\n';
-                            mailText += 'Reason: ' + item.reason + '\n\n';
-                        });
+    console.log(`Items to send to ECN for order #${orderNumber}:`, itemsToOrder.length);
 
-                   }
-                   errorMailOptions.text = mailText;
-                   errorMailOptions.text += '\n\nAttempted XML: \n\n' + attemptedXML;
-                    sendErrEmail(errorMailOptions);
-            //    } else if (rejectedItems.length > 0 && !rejectedOrderReason) {
-            //        sendErrEmailToCustomer(rejectedItems, order);
-               } else {
+    // Build <item> blocks
+    for (const lineItem of itemsToOrder) {
+      try {
+        const productUrl = shopifyRestUrl(`/products/${lineItem.product_id}.json?fields=product_type`);
 
-                    let url = 'https://febe69a891c04a2e134443805cdcd304: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@try-sassy-box.myshopify.com/admin/api/2020-10/orders/' + order.id + '.json';
+        const response = await axios.get(productUrl);
+        const productType = response.data.product.product_type;
 
-                    axios.put(url, {
-                        "order": {
-                        "id": order.id,
-                        "tags": "ECN-Order-Placed, ECNORDERID-" + ecnOrderId
-                        }
-                    })
-                    .then(response => {
-                        console.log(response.data);
-                        // let transactionAPIURL = 'https://febe69a891c04a2e134443805cdcd304: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@try-sassy-box.myshopify.com/admin/api/2020-10/orders/' + order.id + '/transactions.json';
-                        // axios.get(transactionAPIURL).then( response => {
-                        //     console.log(response.data);
-                        //     let authorizationKey = response.data['transactions'][0].authorization;
-                        //     let transactionAPIURL = 'https://febe69a891c04a2e134443805cdcd304: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@try-sassy-box.myshopify.com/admin/api/2020-10/orders/' + order.id + '/transactions.json';
-                        //     axios.post(transactionAPIURL, {
-                        //         "transaction": {
-                        //             "kind": "capture",
-                        //             "authorization": authorizationKey
-                        //         }
-                        //     }).then(response => {
-                        //         console.log(response.data);
-                        //     }).catch(error => {
-                        //         console.log(error);
-                        //     })
-                        // })
-                    })
-                    .catch(error => {
-                        console.log(error);
-                    });
-               }
-
-            })
-        });
-
+        xmlStr += `
+      <item>
+        <itemSKU>${lineItem.sku}</itemSKU>
+        <itemid>${productType}</itemid>
+        <quantity>${lineItem.quantity}</quantity>
+        <price>${lineItem.price}</price>
+      </item>`;
+      } catch (err) {
+        console.error('Error fetching product_type for line item', lineItem.sku, err.message);
+        // You could choose to skip the item or throw; original code just logged the error.
+      }
     }
 
+    // Close XML
+    xmlStr += `
+    </lineitems>
+  </order>
+</orders>`;
+
+    attemptedXML = xmlStr;
+
+    // Send XML to ECN
+    const orderUrl = `${ECN_BASE_URL}/processxmlorder2.cfm?passkey=${ECN_PASSKEY}&clientID=${ECN_CLIENT_ID}&storeid=${ECN_STORE_ID}`;
+
+    console.log(`Sending XML to ECN for order #${orderNumber}...`);
+
+    const requestOptions = {
+      method: 'POST',
+      url: orderUrl,
+      formData: {
+        processxmlorder: xmlStr,
+      },
+    };
+
+    const response = await requestAsync(requestOptions);
+
+    // Parse ECN XML response
+    await handleEcnResponse(response.body, order, attemptedXML);
+  } catch (err) {
+    console.error('Error in placeOrderToECN:', err);
+    const mailOptions = createErrorMailOptions(orderNumber, [
+      'Error sending order to ECN',
+      '',
+      `Error: ${err.message}`,
+      '',
+      'Attempted XML:',
+      attemptedXML,
+    ].join('\n'));
+    sendErrEmail(mailOptions);
+  }
+}
+
+// ---------- ECN Response Handling ----------
+
+async function handleEcnResponse(xmlBody, order, attemptedXML) {
+  const orderNumber = order.order_number;
+
+  xmlParser.parseString(xmlBody, function (err, result) {
+    if (err) {
+      console.error('Error parsing ECN XML response:', err);
+      const mailOptions = createErrorMailOptions(orderNumber, [
+        'Error parsing ECN response XML',
+        '',
+        `Error: ${err.message}`,
+        '',
+        'Raw response:',
+        xmlBody,
+        '',
+        'Attempted XML:',
+        attemptedXML,
+      ].join('\n'));
+      return sendErrEmail(mailOptions);
+    }
+
+    try {
+      const content = result.content;
+
+      const ecnOrderId =
+        content.orders &&
+        content.orders[0] &&
+        content.orders[0].order[0].orderid[0];
+
+      const rejectedReason =
+        content.rejectedorders &&
+        content.rejectedorders[0] &&
+        content.rejectedorders[0].ro_order[0].ro_rejectedreason[0];
+
+      const itemsNotFound = (content.itemsnotfound && content.itemsnotfound[0].inf_item) || [];
+      const rejectedItems = [];
+
+      itemsNotFound.forEach((item) => {
+        const rejectedItem = {};
+
+        if (item.inf_itemsku && item.inf_itemsku[0] && item.inf_itemsku[0].trim() !== '') {
+          rejectedItem.sku = item.inf_itemsku[0];
+        }
+        if (
+          item.inf_rejectedreason &&
+          item.inf_rejectedreason[0] &&
+          item.inf_rejectedreason[0].trim() !== ''
+        ) {
+          rejectedItem.reason = item.inf_rejectedreason[0];
+        }
+
+        if (Object.keys(rejectedItem).length) {
+          rejectedItems.push(rejectedItem);
+        }
+      });
+
+      if (rejectedReason && rejectedReason.trim() !== '') {
+        console.log('ECN rejected order. Reason:', rejectedReason);
+        console.log('Rejected items:', rejectedItems);
+
+        let mailText = '';
+
+        if (rejectedReason) {
+          mailText += 'Rejected Order Reason:\n';
+          mailText += `${rejectedReason}\n\n`;
+        }
+
+        if (rejectedItems.length > 0) {
+          mailText += 'Rejected Items In Order:\n';
+          rejectedItems.forEach((item) => {
+            mailText += `Item SKU: ${item.sku}\n`;
+            mailText += `Reason: ${item.reason}\n\n`;
+          });
+        }
+
+        mailText += '\nAttempted XML:\n\n';
+        mailText += attemptedXML;
+
+        const mailOptions = createErrorMailOptions(order.order_number, mailText);
+        sendErrEmail(mailOptions);
+      } else {
+        console.log(`ECN order accepted for Shopify order #${orderNumber}, ECN ID: ${ecnOrderId}`);
+        // Tag Shopify order with ECN info
+        return tagShopifyOrderWithEcn(order.id, ecnOrderId);
+      }
+    } catch (e) {
+      console.error('Error processing ECN response structure:', e);
+      const mailOptions = createErrorMailOptions(orderNumber, [
+        'Error processing ECN response structure',
+        '',
+        `Error: ${e.message}`,
+        '',
+        'Raw response:',
+        xmlBody,
+        '',
+        'Attempted XML:',
+        attemptedXML,
+      ].join('\n'));
+      sendErrEmail(mailOptions);
+    }
+  });
+}
+
+// ---------- Shopify Order Tagging ----------
+
+async function tagShopifyOrderWithEcn(shopifyOrderId, ecnOrderId) {
+  try {
+    const url = shopifyRestUrl(`/orders/${shopifyOrderId}.json`);
+
+    const payload = {
+      order: {
+        id: shopifyOrderId,
+        tags: `ECN-Order-Placed, ECNORDERID-${ecnOrderId}`,
+      },
+    };
+
+    const response = await axios.put(url, payload);
+    console.log('Shopify order tagged with ECN info:', response.data.order && response.data.order.id);
+  } catch (err) {
+    console.error('Error tagging Shopify order with ECN ID:', err.message);
+    const mailOptions = createErrorMailOptions(
+      shopifyOrderId,
+      `Error tagging Shopify order with ECN ID:\n\n${err.stack || err}`
+    );
+    sendErrEmail(mailOptions);
+  }
+}
+
+// ---------- Start Server ----------
+
+const PORT = process.env.PORT || 8000;
+app.listen(PORT, () => {
+  console.log(`Order webhook app listening on port ${PORT}`);
+});

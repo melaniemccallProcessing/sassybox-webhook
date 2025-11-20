@@ -3,3 +3,5 @@ example_order.json
 example_order.xml
 indexphp.txt
 package-lock.json
+.vscode
+.env

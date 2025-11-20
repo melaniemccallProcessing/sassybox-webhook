@@ -23,18 +23,18 @@
 			<fillstatusid>4</fillstatusid>
 			<packingincludesid>1</packingincludesid>
 			<orderpauselevelid></orderpauselevelid>
-            <invoicefootertext></invoicefootertext>
+			<invoicefootertext></invoicefootertext>
 			<signatureconfirmationid></signatureconfirmationid>
-            <insuranceid></insuranceid>
-            <saturdaydeliveryid>1</saturdaydeliveryid>
+			<insuranceid></insuranceid>
+			<saturdaydeliveryid>1</saturdaydeliveryid>
 		</orderheader>
 		<lineitems>
 			<item>
 				<itemSKU>BL-06201</itemSKU>
 				<itemid>58501</itemid>
 				<quantity>1</quantity>
-                <price>79.99</price>
+				<price>79.99</price>
 			</item>
-			</lineitems>
+		</lineitems>
 	</order>
 </orders>
